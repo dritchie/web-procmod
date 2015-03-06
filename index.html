@@ -1,0 +1,87 @@
+<html>
+	<head>
+		<title>Procedural Modeling</title>
+		<style>
+			body { margin: 0; }
+			canvas { width: 100%; height: 100% }
+		</style>
+		<!-- <link rel="stylesheet" href="lib/codemirror/codemirror.css"> -->
+		<!-- <script src="lib/codemirror/codemirror-compressed.js"></script> -->
+		<script src="lib/three/three.min.js"></script>
+		<script src="lib/three/OrbitControls.js"></script>
+		<script src="model.js"></script>
+	</head>
+	<body>
+<!-- 		<div>
+			<textarea id="code">
+				// This is a comment!
+			</textarea>
+		</div> -->
+		<script>
+			var scene, camera, renderer, controls;
+			var gui;
+
+			function animate() 
+			{
+				requestAnimationFrame(animate);
+				controls.update();
+			}
+
+			function render()
+			{
+				renderer.render(scene, camera);
+			}
+
+			function onWindowResize()
+			{
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize(window.innerWidth, window.innerHeight);
+				render();
+			}
+			function init()
+			{
+				scene = new THREE.Scene();
+				camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
+
+				renderer = new THREE.WebGLRenderer({ antialias: true });
+				renderer.setClearColor(new THREE.Color(0.2, 0.2, 0.2), 1.0);
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				document.body.appendChild( renderer.domElement );
+
+				var geometry = genGeometry();
+				var materials = [
+					new THREE.MeshLambertMaterial({ color: new THREE.Color(.9, .9, .9).getHex(), shading: THREE.FlatShading }),
+					new THREE.MeshBasicMaterial({ color: 0x000000, shading: THREE.FlatShading, wireframe: true, wireframeLinewidth: 2, transparent: true })
+				];
+				var cube = new THREE.SceneUtils.createMultiMaterialObject( geometry, materials );
+				scene.add( cube );
+
+				var amblight = new THREE.AmbientLight(new THREE.Color(.3, .3, .3).getHex());
+				var dirlight = new THREE.DirectionalLight(0xffffff, 1.0);
+				dirlight.position.set(-1, 1, 1);
+				scene.add(amblight);
+				scene.add(dirlight);
+
+				camera.position.z = 10;
+
+				controls = new THREE.OrbitControls( camera );
+				controls.damping = 0.2;
+				controls.addEventListener( 'change', render );
+
+				window.addEventListener( 'resize', onWindowResize, false );
+				animate();
+
+				// var editor = CodeMirror.fromTextArea(document.getElementById("code"),
+				// {
+				// 	lineNumbers: true,
+				// 	matchBrackets: true,
+				// 	autoCloseBrackets: true
+				// });
+			}
+
+			init();
+			render();
+		</script>
+	</body>
+</html>
