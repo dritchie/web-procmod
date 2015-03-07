@@ -10,7 +10,7 @@
 		<script src="lib/jquery-2.1.3.min.js"></script>
 		<script src="lib/three/three.min.js"></script>
 		<script src="lib/three/OrbitControls.js"></script>
-		<script src="lib/webppl.js"></script>
+		<script src="lib/webppl.min.js"></script>
 	</head>
 	<body>
 <!-- 		<div>
@@ -20,6 +20,7 @@
 		</div> -->
 		<script>
 			var scene, camera, renderer, controls;
+			var compiledCode, topK, _trampoline;
 
 			function animate() 
 			{
@@ -40,20 +41,28 @@
 				render();
 			}
 
-			function webpplgen(code)
+			function webppl_compile(code)
 			{
 				var geometry;
-				webppl.run("(function(){" + code + "})()", function(store, geometry)
+				compiledCode = webppl.compile("(function(){" + code + "})()");
+				webppl_generate();
+			}
+
+			function webppl_generate()
+			{
+				topK = function(store, geometry)
 				{
-					console.log(geometry);
+					_trampoline = null;
+
 					var materials = [
 						new THREE.MeshLambertMaterial({ color: new THREE.Color(.9, .9, .9).getHex(), shading: THREE.FlatShading, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }),
 						new THREE.MeshBasicMaterial({ color: 0x000000, shading: THREE.FlatShading, wireframe: true, wireframeLinewidth: 2, transparent: true })
 					];
 					var obj = new THREE.SceneUtils.createMultiMaterialObject( geometry, materials );
 					scene.add( obj );
-				});
-				render();
+					render();
+				}
+				eval(compiledCode);
 			}
 
 			function init()
@@ -114,7 +123,7 @@
 
 				// ------------------------------------------------
 
-				$.get("model.wppl", webpplgen);
+				$.get("model.wppl", webppl_compile);
 			}
 
 			init();
