@@ -10,6 +10,7 @@
 		<script src="lib/jquery-2.1.3.min.js"></script>
 		<script src="lib/three/three.min.js"></script>
 		<script src="lib/three/OrbitControls.js"></script>
+		<script src="lib/dat.gui.min.js"></script>
 		<script src="lib/webppl.min.js"></script>
 	</head>
 	<body>
@@ -19,8 +20,9 @@
 			</textarea>
 		</div> -->
 		<script>
-			var scene, camera, renderer, controls;
+			var scene, camera, renderer, controls, gui, settings;
 			var compiledCode, topK, _trampoline;
+			var model = null;
 
 			function animate() 
 			{
@@ -58,8 +60,10 @@
 						new THREE.MeshLambertMaterial({ color: new THREE.Color(.9, .9, .9).getHex(), shading: THREE.FlatShading, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }),
 						new THREE.MeshBasicMaterial({ color: 0x000000, shading: THREE.FlatShading, wireframe: true, wireframeLinewidth: 2, transparent: true })
 					];
-					var obj = new THREE.SceneUtils.createMultiMaterialObject( geometry, materials );
-					scene.add( obj );
+					if (model !== null)
+						scene.remove(model);
+					model = new THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+					scene.add(model);
 					render();
 				}
 				eval(compiledCode);
@@ -87,6 +91,13 @@
 				controls = new THREE.OrbitControls( camera );
 				controls.damping = 0.2;
 				controls.addEventListener( 'change', render );
+
+				gui = new dat.GUI();
+				settings = 
+				{
+					regenerate: webppl_generate
+				}
+				gui.add(settings, "regenerate");
 
 				window.addEventListener( 'resize', onWindowResize, false );
 				animate();
