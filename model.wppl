@@ -1,7 +1,18 @@
 
+// var targetWidth = 4.0;
+// var targetLength = 25.0;
+var targetWidth = 10.0;
+var targetLength = 10.0;
+
 var generate = function()
 {
-	return addBody(S.new(THREE.Geometry), 0, -5);
+	var geo = addBody(S.new(THREE.Geometry), 0, -5);
+	geo.computeBoundingBox();
+	var bbox = geo.boundingBox;
+	var extents = bbox.size();
+	gaussianFactor(targetWidth, 0.25, extents.x);
+	gaussianFactor(targetLength, 0.25, extents.z);
+	return geo;
 }
 
 var addBody = function(geo, i, rearz)
@@ -97,7 +108,11 @@ var box = function(x, y, z, xlen, ylen, zlen)
 	return b;
 }
 
-return generate();
+// return generate();
+
+// var N = 1
+var N = 1000
+return MH(generate, N, true);
 
 
 

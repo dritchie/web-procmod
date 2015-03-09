@@ -11,7 +11,7 @@
 		<script src="lib/three/three.min.js"></script>
 		<script src="lib/three/OrbitControls.js"></script>
 		<script src="lib/dat.gui.min.js"></script>
-		<script src="lib/webppl.min.js"></script>
+		<script src="../webppl/compiled/webppl.min.js"></script>
 	</head>
 	<body>
 <!-- 		<div>
@@ -52,21 +52,39 @@
 
 			function webppl_generate()
 			{
-				topK = function(store, geometry)
+				topK = function(store, samps)
 				{
 					_trampoline = null;
+
+					var bestsamp = null;
+					var bestscore = -Infinity;
+					for (var i = 0; i < samps.length; i++)
+					{
+						var entry = samps[i];
+						if (entry.prob > bestscore)
+						{
+							bestscore = entry.prob;
+							bestsamp = entry.val;
+						} 
+					}
+					var geometry = bestsamp;
 
 					var materials = [
 						new THREE.MeshLambertMaterial({ color: new THREE.Color(.9, .9, .9).getHex(), shading: THREE.FlatShading, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }),
 						new THREE.MeshBasicMaterial({ color: 0x000000, shading: THREE.FlatShading, wireframe: true, wireframeLinewidth: 2, transparent: true })
 					];
+
 					if (model !== null)
 						scene.remove(model);
 					model = new THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
 					scene.add(model);
+
 					render();
 				}
+				var t0 = performance.now();
 				eval(compiledCode);
+				var t1 = performance.now();
+				console.log("Time: ", (t1-t0)/1000.0);
 			}
 
 			function init()
