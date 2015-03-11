@@ -53,9 +53,13 @@
 
 			function webppl_generate()
 			{
+				var t0;
 				topK = function(store, samps)
 				{
 					_trampoline = null;
+
+					var t1 = performance.now();
+					console.log("Time: ", (t1-t0)/1000.0);
 
 					var bestsamp = null;
 					var bestscore = -Infinity;
@@ -69,7 +73,7 @@
 						} 
 					}
 					// var geometry = bestsamp;
-					var geometry = bestsamp.toThreeGeo();
+					var geometry = bestsamp.toPrimGeo();
 
 					var materials = [
 						new THREE.MeshLambertMaterial({ color: new THREE.Color(.9, .9, .9).getHex(), shading: THREE.FlatShading, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }),
@@ -83,10 +87,9 @@
 
 					render();
 				}
-				var t0 = performance.now();
+				t0 = performance.now();
+				// TODO: Get rid of repeated call to eval by pre-evaluating code and storing it in a function somehow?
 				eval(compiledCode);
-				var t1 = performance.now();
-				console.log("Time: ", (t1-t0)/1000.0);
 			}
 
 			function init()

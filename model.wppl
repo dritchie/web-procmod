@@ -7,7 +7,7 @@ var targetLength = 10.0;
 var generate = function()
 {
 	// var geo = addBody(S.new(THREE.Geometry), 0, -5);
-	var geo = addBody(Geo.new(), 0, -5);
+	var geo = addBody(Geo.newChain(), 0, -5);
 	geo.computeBoundingBox();
 	var bbox = geo.boundingBox;
 	var extents = bbox.size();
