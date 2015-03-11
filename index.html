@@ -73,7 +73,9 @@
 						} 
 					}
 					// var geometry = bestsamp;
-					var geometry = bestsamp.toPrimGeo();
+					// var geometry = bestsamp.toPrimGeo();
+					// var geometry = bestsamp.toThreeGeo();
+					var geometry = bestsamp.toPrimGeo().toThreeGeo();
 
 					var materials = [
 						new THREE.MeshLambertMaterial({ color: new THREE.Color(.9, .9, .9).getHex(), shading: THREE.FlatShading, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }),
