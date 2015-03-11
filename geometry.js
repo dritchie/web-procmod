@@ -60,6 +60,9 @@ var Geo = (function() {
 	// ------------------------------------------------------------------------
 
 	// Recursive chain definition of combined geometry
+	// Roughly like a Scheme list (where car == this.geo and cdr == this.next),
+	//    except that the 'empty list' is actually an object with both this.geo
+	//    and this.next == null.
 	Geo.GeometryChain = function(geo, next)
 	{
 		this.geo = geo || null;
@@ -73,42 +76,55 @@ var Geo = (function() {
 
 		constructor: Geo.GeometryChain,
 
+		length: function()
+		{
+			var len = 0;
+			var currchain = this;
+			while (currchain.geo !== null)
+			{
+				len = len + 1;
+				currchain = currchain.next;
+			}
+			return len;
+		},
+
 		combine: function(primgeo)
 		{
-			if (this.geo == null)
-			{
-				this.geo = primgeo;
-				return this;
-			}
-			else
-				return new Geo.GeometryChain(primgeo, this);
+			return new Geo.GeometryChain(primgeo, this);
 		},
 
 		computeBoundingBox: function()
 		{
+			// Only compute if we haven't already
+			// (Basically memoization, since this object is immutable)
 			if (this.boundingBox == null)
 			{
-				if (this.geo == null)
-					this.boundingBox = new THREE.Box3();
-				else
+				if (this.geo !== null)
 				{
 					this.geo.computeBoundingBox();
 					this.boundingBox = this.geo.boundingBox.clone();
-					if (this.next !== null)
-					{
-						this.next.computeBoundingBox();
+					this.next.computeBoundingBox();
+					if (this.next.boundingBox !== null)
 						this.boundingBox.union(this.next.boundingBox);
-					}
 				}
 			}
 		},
 
 		toPrimGeo: function()
 		{
-			var combogeo = this.geo.clone();
-			if (this.next !== null)
-				combogeo.merge(this.next.toPrimGeo());
-			return combogeo;
+			if (this.geo == null)
+				return null;
+			else
+			{
+				var accumgeo = this.geo.clone();
+				var currchain = this.next;
+				while (currchain.geo !== null)
+				{
+					accumgeo.merge(currchain.geo);
+					currchain = currchain.next;
+				}
+				return accumgeo;
+			}
 		}
 	};
 
