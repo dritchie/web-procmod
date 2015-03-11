@@ -54,12 +54,14 @@
 			function webppl_generate()
 			{
 				var t0;
-				topK = function(store, samps)
+				topK = function(store, erp)
 				{
 					_trampoline = null;
 
 					var t1 = performance.now();
 					console.log("Time: ", (t1-t0)/1000.0);
+
+					var samps = erp.samples;
 
 					var bestsamp = null;
 					var bestscore = -Infinity;
@@ -72,9 +74,6 @@
 							bestsamp = entry.val;
 						} 
 					}
-					// var geometry = bestsamp;
-					// var geometry = bestsamp.toPrimGeo();
-					// var geometry = bestsamp.toThreeGeo();
 					var geometry = bestsamp.toPrimGeo().toThreeGeo();
 
 					var materials = [
