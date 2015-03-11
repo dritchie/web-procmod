@@ -12,6 +12,7 @@
 		<script src="lib/three/OrbitControls.js"></script>
 		<script src="lib/dat.gui.min.js"></script>
 		<script src="../webppl/compiled/webppl.min.js"></script>
+		<script src="geometry.js"></script>
 	</head>
 	<body>
 <!-- 		<div>
@@ -67,7 +68,8 @@
 							bestsamp = entry.val;
 						} 
 					}
-					var geometry = bestsamp;
+					// var geometry = bestsamp;
+					var geometry = bestsamp.toThreeGeo();
 
 					var materials = [
 						new THREE.MeshLambertMaterial({ color: new THREE.Color(.9, .9, .9).getHex(), shading: THREE.FlatShading, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }),

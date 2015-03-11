@@ -6,7 +6,8 @@ var targetLength = 10.0;
 
 var generate = function()
 {
-	var geo = addBody(S.new(THREE.Geometry), 0, -5);
+	// var geo = addBody(S.new(THREE.Geometry), 0, -5);
+	var geo = addBody(Geo.new(), 0, -5);
 	geo.computeBoundingBox();
 	var bbox = geo.boundingBox;
 	var extents = bbox.size();
@@ -99,12 +100,12 @@ var uniformrel = function(lo, hi)
 	return (1-u)*lo + u*hi;
 }
 
+var boxm = S.new(THREE.Matrix4);
 var box = function(x, y, z, xlen, ylen, zlen)
 {
 	var b = S.new(THREE.BoxGeometry, xlen, ylen, zlen);
-	var m = S.new(THREE.Matrix4);
-	m.makeTranslation(x, y, z);
-	b.applyMatrix(m);
+	boxm.makeTranslation(x, y, z);
+	b.applyMatrix(boxm);
 	return b;
 }
 
