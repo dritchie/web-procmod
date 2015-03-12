@@ -48,7 +48,7 @@ var Grids = (function(){
 
 		resize: function(dims)
 		{
-			if (~this.dims.equal(dims))
+			if (!this.dims.equal(dims))
 			{
 				this.dims.copy(dims);
 				this.data = new Uint32Array(this.numuints());
@@ -80,7 +80,7 @@ var Grids = (function(){
 			var linidx = z*this.dims.y*this.dims.x + y*this.dims.x + x;
 			var baseidx = Math.floor(linidx / BITS_PER_UINT);
 			var localidx = linidx % BITS_PER_UINT;
-			return (this.data[baseidx] && (1 << localidx)) ~= 0;
+			return (this.data[baseidx] && (1 << localidx)) !== 0;
 		},
 
 		set: function(x, y, z)
@@ -109,7 +109,7 @@ var Grids = (function(){
 
 		assertSameDims: function(other)
 		{
-			if (~this.dims.equal(other.dims))
+			if (!this.dims.equal(other.dims))
 				throw "Cannot union grids of unequal dimensions";
 		},
 
@@ -176,7 +176,7 @@ var Grids = (function(){
 		for (var z = bounds.mins.z; z < bounds.maxs.z; z++)
 			for (var y = bounds.mins.y; y < bounds.maxs.y; y++)
 				for (var x = bounds.mins.x; x < bounds.maxs.x; x++)
-					if (~visited.isset(x, y, z))
+					if (!visited.isset(x, y, z))
 					{
 						var isoutside = false;
 						var fringe = [];
@@ -195,23 +195,23 @@ var Grids = (function(){
 							else
 							{
 								visited.set(v.x, v.y, v.z);
-								if (~visited.isset(v.x-1, v.y, v.z))
+								if (!visited.isset(v.x-1, v.y, v.z))
 									fringe.insert(voxel(v.x-1, v.y, v.z));
-								if (~visited.isset(v.x+1, v.y, v.z))
+								if (!visited.isset(v.x+1, v.y, v.z))
 									fringe.insert(voxel(v.x+1, v.y, v.z));
-								if (~visited.isset(v.x, v.y-1, v.z))
+								if (!visited.isset(v.x, v.y-1, v.z))
 									fringe.insert(voxel(v.x, v.y-1, v.z));
-								if (~visited.isset(v.x, v.y+1, v.z))
+								if (!visited.isset(v.x, v.y+1, v.z))
 									fringe.insert(voxel(v.x, v.y+1, v.z));
-								if (~visited.isset(v.x, v.y, v.z-1))
+								if (!visited.isset(v.x, v.y, v.z-1))
 									fringe.insert(voxel(v.x, v.y, v.z-1));
-								if (~visited.isset(v.x, v.y, v.z+1))
+								if (!visited.isset(v.x, v.y, v.z+1))
 									fringe.insert(voxel(v.x, v.y, v.z+1));
 							}
 						}
 						// Once we've grown this region to completion, check whether it is
 						//    inside or outside. If inside, add it to this.
-						if (~isoutside) this.unionInPlace(frontier);
+						if (!isoutside) this.unionInPlace(frontier);
 						frontier.clearall();
 					}
 	}
