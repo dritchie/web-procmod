@@ -97,6 +97,78 @@ var Geo = (function() {
 		}
 	}
 
+	// Voxelization stuff
+
+	var vzero = new THREE.Vector3(0, 0, 0);
+
+	function voxelizeTriangle(outgrid, v0, v1, v2, tribb, solid)
+	{
+		// If a triangle is perfectly axis-aligned, it will 'span' zero voxels, so the loops below
+		//    will do nothing. To get around this, we expand the bbox a little bit.
+		// Take care to ensure that we don't loop over any voxels that are outside the actual grid
+		tribb.expandByScalar(0.000001);
+		tribb.mins.floor().max(vzero);
+		tribb.maxs.ceil().max(vzero).min(outgrid.dims);
+		var vmin = new THREE.Vector3();
+		var vmax = new THREE.Vector3();
+		var voxel = new THREE.Box();
+		for (var z = tribb.mins.z; z < tribb.maxs.z; z++)
+			for (var y = tribb.mins.y; y < tribb.maxs.y; y++)
+				for (var x = tribb.mins.x; x < tribb.maxs.x; x++)
+				{
+					vmin.set(x, y, z);
+					vmax.set(x+1, y+1, z+1);
+					voxel.set(vmin, vmax);
+					// Triangle has to intersect voxel
+					if (BOX_INTERSECTS_TRI(???))	// TODO: implement this
+						outgrid.set(x, y, z);
+				}
+	}
+
+	Geo.Geometry.prototype.voxelize = function(outgrid, bounds, dimsOrSize, solid)
+	{
+		var dims;
+		if (dimsOrSize instanceof THREE.Vector3)
+			dims = dimsOrSize;
+		else
+		{
+			var voxelSize = dimsOrSize;
+			dims = bounds.size().dividScalar(voxelSize).ceil();
+		}
+		outgrid.resize(dims);
+		var extents = bounds.size();
+		var worldtovox = new THREE.Matrix4();
+		worldtovox.makeScale(1/extents.x, 1/extents.y, 1/extents.z);
+		var translate = new THREE.Matrix4();
+		translate.makeTranslation(bounds.mins.clone().negate());	// bleh, I hate having to use this form...
+		worldtovox.multiply(translate);
+		var numtris = this.indices / 3;
+		var gridbounds = new THREE.Box3(vzero, outgrid.dims);
+		var touchedbb = new THREE.Box3();
+		var p0 = new THREE.Vector3();
+		var p1 = new THREE.Vector3();
+		var p2 = new THREE.Vector3();
+		var tribb = new THREE.Box3();
+		// TODO(?): Parallelize this loop using WebWorkers?
+		for (var i = 0; i < numtris; i++)
+		{
+			p0.copy(this.vertices[this.indices[3*i].vertex]);
+			p1.copy(this.vertices[this.indices[3*i + 1].vertex]);
+			p2.copy(this.vertices[this.indices[3*i + 2].vertex]);
+			p0.applyMatrix4(worldtovox);
+			p1.applyMatrix4(worldtovox);
+			p2.applyMatrix4(worldtovox);
+			tribb.makeEmpty();
+			tribb.expandByPoint(p0); tribb.expandByPoint(p1); tribb.expandByPoint(p2);
+			if (BOX_INTERSECTS_TRI(???))	// TODO: implement this
+			{
+				voxelizeTriangle(outgrid, p0, p1, p2, tribb, solid);
+				touchedbb.union(tribb);
+			}
+		}
+		if (solid) outgrid.fillInterior(touchedbb);
+	}
+
 	// ------------------------------------------------------------------------
 
 	// Geometry creation utilities
