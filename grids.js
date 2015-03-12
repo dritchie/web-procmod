@@ -19,14 +19,12 @@ var Grids = (function(){
 
 	// 3D compressed binary grid representation
 	// Data is linearized in x, y, z order (x runs fastest, z runs slowest)
-	Grids.BinaryGrid3 = function(xdim, ydim, zdim)
+	Grids.BinaryGrid3 = function(dims)
 	{
-		this.xdim = xdim || 0;
-		this.ydim = ydim || 0;
-		this.zdim = zdim || 0;
+		this.dims = dims || new THREE.Vector3(0, 0, 0);
 		this.data = null;
-		if (xdim > 0 && ydim > 0 && zdim > 0)
-			this.resize(xdim, ydim, zdim);
+		if (dims.x > 0 && dims.y > 0 && dims.z > 0)
+			this.resize(dims);
 	}
 
 	Grids.BinaryGrid3.prototype = {
@@ -35,7 +33,7 @@ var Grids = (function(){
 
 		numcells: function()
 		{
-			return this.xdim * this.ydim * this.zim;
+			return this.dims.x * this.dims.y * this.dims.z;
 		},
 
 		numuints: function()
@@ -48,20 +46,18 @@ var Grids = (function(){
 			return this.numuints() * BITS_PER_UINT;
 		}
 
-		resize: function(xdim, ydim, zdim)
+		resize: function(dims)
 		{
-			if (this.xdim !== xdim || this.ydim !== ydim || this.zdim !== zdim)
+			if (~this.dims.equal(dims))
 			{
-				this.xdim = xdim;
-				this.ydim = ydim;
-				this.zdim = zdim;
+				this.dims.copy(dims);
 				this.data = new Uint32Array(this.numuints());
 			}
 		},
 
 		copy: function(other)
 		{
-			this.resize(other.xdim, other.ydim, other.zdim);
+			this.resize(other.dims);
 			this.data.set(other.data);
 		},
 
@@ -81,7 +77,7 @@ var Grids = (function(){
 
 		isset: function(x, y, z)
 		{
-			var linidx = z*this.ydim*this.xdim + y*this.xdim + x;
+			var linidx = z*this.dims.y*this.dims.x + y*this.dims.x + x;
 			var baseidx = Math.floor(linidx / BITS_PER_UINT);
 			var localidx = linidx % BITS_PER_UINT;
 			return (this.data[baseidx] && (1 << localidx)) ~= 0;
@@ -89,7 +85,7 @@ var Grids = (function(){
 
 		set: function(x, y, z)
 		{
-			var linidx = z*this.ydim*this.xdim + y*this.xdim + x;
+			var linidx = z*this.dims.y*this.dims.x + y*this.dims.x + x;
 			var baseidx = Math.floor(linidx / BITS_PER_UINT);
 			var localidx = linidx % BITS_PER_UINT;
 			this.data[baseidx] |= (1 << localidx);
@@ -97,7 +93,7 @@ var Grids = (function(){
 
 		toggle: function(x, y, z)
 		{
-			var linidx = z*this.ydim*this.xdim + y*this.xdim + x;
+			var linidx = z*this.dims.y*this.dims.x + y*this.dims.x + x;
 			var baseidx = Math.floor(linidx / BITS_PER_UINT);
 			var localidx = linidx % BITS_PER_UINT;
 			this.data[baseidx] ^= (1 << localidx);
@@ -105,7 +101,7 @@ var Grids = (function(){
 
 		clear: function(x, y, z)
 		{
-			var linidx = z*this.ydim*this.xdim + y*this.xdim + x;
+			var linidx = z*this.dims.y*this.dims.x + y*this.dims.x + x;
 			var baseidx = Math.floor(linidx / BITS_PER_UINT);
 			var localidx = linidx % BITS_PER_UINT;
 			this.data[baseidx] &= ~(1 << localidx);
@@ -113,9 +109,7 @@ var Grids = (function(){
 
 		assertSameDims: function(other)
 		{
-			if (this.xdim !== other.xdim ||
-				this.ydim !== other.ydim ||
-				this.zdim !== other.zdim)
+			if (~this.dims.equal(other.dims))
 				throw "Cannot union grids of unequal dimensions";
 		},
 
@@ -138,9 +132,9 @@ var Grids = (function(){
 		{
 			this.assertSameDims(other);
 			var num = 0;
-			for (var z = 0; z < this.zdim; z++)
-				for (var y = 0; y < this.ydim; y++)
-					for (var x = 0; x < this.xdim; x++)
+			for (var z = 0; z < this.dims.z; z++)
+				for (var y = 0; y < this.dims.y; y++)
+					for (var x = 0; x < this.dims.z; x++)
 						num += (this.isset(x, y, z) == other.isset(x, y, z));
 			return num;
 		},
