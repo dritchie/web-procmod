@@ -13,6 +13,8 @@
 		<script src="lib/dat.gui.min.js"></script>
 		<script src="../webppl/compiled/webppl.min.js"></script>
 		<script src="geometry.js"></script>
+		<script src="grids.js"></script>
+		<script src="intersection.js"></script>
 	</head>
 	<body>
 <!-- 		<div>
@@ -74,7 +76,19 @@
 							bestsamp = entry.val;
 						} 
 					}
-					var geometry = bestsamp.toPrimGeo().toThreeGeo();
+					var geometry = bestsamp.toPrimGeo();
+
+					// TEST voxelization
+					var grid = new Grids.BinaryGrid3();
+					geometry.computeBoundingBox();
+					var bounds = geometry.boundingBox;
+					bounds.expandByScalar(0.1);
+					var voxelSize = 0.25;
+					geometry.voxelize(grid, bounds, voxelSize, true);
+					grid.toMesh(geometry, bounds);
+					console.log(grid.numFilledCells());
+
+					geometry = geometry.toThreeGeo();
 
 					var materials = [
 						new THREE.MeshLambertMaterial({ color: new THREE.Color(.9, .9, .9).getHex(), shading: THREE.FlatShading, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }),

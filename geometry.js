@@ -52,6 +52,11 @@ var Geo = (function() {
 			return ngeo;
 		},
 
+		clear: function()
+		{
+			Geo.Geometry.call(this);
+		},
+
 		computeBoundingBox: function()
 		{
 			if (this.boundingBox == null)
@@ -105,23 +110,25 @@ var Geo = (function() {
 	{
 		// If a triangle is perfectly axis-aligned, it will 'span' zero voxels, so the loops below
 		//    will do nothing. To get around this, we expand the bbox a little bit.
-		// Take care to ensure that we don't loop over any voxels that are outside the actual grid
+		// (Take care to ensure that we don't loop over any voxels that are outside the actual grid)
 		tribb.expandByScalar(0.000001);
-		tribb.mins.floor().max(vzero);
-		tribb.maxs.ceil().max(vzero).min(outgrid.dims);
+		tribb.min.floor().max(vzero);
+		tribb.max.ceil().max(vzero).min(outgrid.dims);
 		var vmin = new THREE.Vector3();
 		var vmax = new THREE.Vector3();
-		var voxel = new THREE.Box();
-		for (var z = tribb.mins.z; z < tribb.maxs.z; z++)
-			for (var y = tribb.mins.y; y < tribb.maxs.y; y++)
-				for (var x = tribb.mins.x; x < tribb.maxs.x; x++)
+		var voxel = new THREE.Box3();
+		for (var z = tribb.min.z; z < tribb.max.z; z++)
+			for (var y = tribb.min.y; y < tribb.max.y; y++)
+				for (var x = tribb.min.x; x < tribb.max.x; x++)
 				{
 					vmin.set(x, y, z);
 					vmax.set(x+1, y+1, z+1);
 					voxel.set(vmin, vmax);
 					// Triangle has to intersect voxel
-					if (BOX_INTERSECTS_TRI(???))	// TODO: implement this
+					if (Intersection.intersectTriangleBBox(voxel.min, voxel.max, v0, v1, v2))
+					{
 						outgrid.set(x, y, z);
+					}
 				}
 	}
 
@@ -133,16 +140,20 @@ var Geo = (function() {
 		else
 		{
 			var voxelSize = dimsOrSize;
-			dims = bounds.size().dividScalar(voxelSize).ceil();
+			dims = bounds.size().divideScalar(voxelSize).ceil();
 		}
 		outgrid.resize(dims);
 		var extents = bounds.size();
+		var xsize = extents.x / dims.x;
+		var ysize = extents.y / dims.y;
+		var zsize = extents.z / dims.z;
 		var worldtovox = new THREE.Matrix4();
-		worldtovox.makeScale(1/extents.x, 1/extents.y, 1/extents.z);
+		worldtovox.makeScale(1/xsize, 1/ysize, 1/zsize);
 		var translate = new THREE.Matrix4();
-		translate.makeTranslation(bounds.mins.clone().negate());	// bleh, I hate having to use this form...
+		var origin = bounds.min.clone().negate();
+		translate.makeTranslation(origin.x, origin.y, origin.z);	// bleh, I hate having to use this form...
 		worldtovox.multiply(translate);
-		var numtris = this.indices / 3;
+		var numtris = this.indices.length / 3;
 		var gridbounds = new THREE.Box3(vzero, outgrid.dims);
 		var touchedbb = new THREE.Box3();
 		var p0 = new THREE.Vector3();
@@ -160,7 +171,7 @@ var Geo = (function() {
 			p2.applyMatrix4(worldtovox);
 			tribb.makeEmpty();
 			tribb.expandByPoint(p0); tribb.expandByPoint(p1); tribb.expandByPoint(p2);
-			if (BOX_INTERSECTS_TRI(???))	// TODO: implement this
+			if (tribb.isIntersectionBox(gridbounds))
 			{
 				voxelizeTriangle(outgrid, p0, p1, p2, tribb, solid);
 				touchedbb.union(tribb);
@@ -223,6 +234,8 @@ var Geo = (function() {
 		geo.normals.push(new THREE.Vector3(0, 1, 0));
 		quad(geo, vi+2, vi+3, vi+7, vi+6, geo.normals.length-1);
 	}
+
+	Geo.addBox = box,
 
 	Geo.box = function(cx, cy, cz, lx, ly, lz)
 	{

@@ -23,7 +23,7 @@ var Grids = (function(){
 	{
 		this.dims = dims || new THREE.Vector3(0, 0, 0);
 		this.data = null;
-		if (dims.x > 0 && dims.y > 0 && dims.z > 0)
+		if (this.dims.x > 0 && this.dims.y > 0 && this.dims.z > 0)
 			this.resize(dims);
 	}
 
@@ -31,24 +31,34 @@ var Grids = (function(){
 
 		constructor: Grids.BinaryGrid3,
 
-		numcells: function()
-		{
-			return this.dims.x * this.dims.y * this.dims.z;
-		},
-
 		numuints: function()
 		{
 			return (this.numcells() + BITS_PER_UINT - 1) / BITS_PER_UINT;
 		},
 
-		numcellsPadded: function()
+		numcells: function()
+		{
+			return this.dims.x * this.dims.y * this.dims.z;
+		},
+
+		numFilledCells: function()
+		{
+			var num = 0;
+			for (var z = 0; z < this.dims.z; z++)
+				for (var y = 0; y < this.dims.y; y++)
+					for (var x = 0; x < this.dims.x; x++)
+						num = num + this.isset(x,y,z);
+			return num;
+		},
+
+		numCellsPadded: function()
 		{
 			return this.numuints() * BITS_PER_UINT;
-		}
+		},
 
 		resize: function(dims)
 		{
-			if (!this.dims.equal(dims))
+			if (this.data == null || !this.dims.equals(dims))
 			{
 				this.dims.copy(dims);
 				this.data = new Uint32Array(this.numuints());
@@ -63,17 +73,17 @@ var Grids = (function(){
 
 		clone: function()
 		{
-			var n = new Gridsels.BinaryGrid3();
+			var n = new Grids.BinaryGrid3();
 			n.copy(this);
 			return n;
-		}
+		},
 
 		clearall: function()
 		{
 			var n = this.numuints();
 			for (var i = 0; i < n; i++)
 				this.data[i] = 0;
-		}
+		},
 
 		isset: function(x, y, z)
 		{
@@ -109,7 +119,7 @@ var Grids = (function(){
 
 		assertSameDims: function(other)
 		{
-			if (!this.dims.equal(other.dims))
+			if (!this.dims.equals(other.dims))
 				throw "Cannot union grids of unequal dimensions";
 		},
 
@@ -161,7 +171,32 @@ var Grids = (function(){
 		percentCellsEqualPadded: function(other)
 		{
 			var n = this.numCellsEqualPadded(other);
-			return n / this.numcellsPadded();
+			return n / this.numCellsPadded();
+		},
+
+		// Generate a mesh from this grid
+		toMesh: function(outgeo, bounds)
+		{
+			function lerp(lo, hi, t) { return (1-t)*lo + t*hi; }
+			outgeo.clear();
+			var extents = bounds.size();
+			var xsize = extents.x/this.dims.x;
+			var ysize = extents.y/this.dims.y;
+			var zsize = extents.z/this.dims.z;
+			for (var zi = 0; zi < this.dims.z; zi++)
+			{
+				var z = lerp(bounds.min.z, bounds.max.z, (zi+0.5)/this.dims.z);
+				for (var yi = 0; yi < this.dims.y; yi++)
+				{
+					var y = lerp(bounds.min.y, bounds.max.y, (yi+0.5)/this.dims.y);
+					for (var xi = 0; xi < this.dims.x; xi++)
+					{
+						var x = lerp(bounds.min.x, bounds.max.z, (xi+0.5)/this.dims.x);
+						if (this.isset(xi, yi, zi))
+							Geo.addBox(outgeo, x, y, z, xsize, ysize, zsize);
+					}
+				}
+			}
 		}
 
 	};
@@ -171,11 +206,11 @@ var Grids = (function(){
 	Grids.BinaryGrid3.prototype.fillInterior = function(bounds)
 	{
 		var visited = this.clone();		// Already-filled cells count as visited.
-		var frontier = new Grids.BinaryGrid3(this.xdim, this.ydim, this.zdim);
+		var frontier = new Grids.BinaryGrid3(this.dims);
 		// Start expanding from every cell we haven't yet visisted.
-		for (var z = bounds.mins.z; z < bounds.maxs.z; z++)
-			for (var y = bounds.mins.y; y < bounds.maxs.y; y++)
-				for (var x = bounds.mins.x; x < bounds.maxs.x; x++)
+		for (var z = bounds.min.z; z < bounds.max.z; z++)
+			for (var y = bounds.min.y; y < bounds.max.y; y++)
+				for (var x = bounds.min.x; x < bounds.max.x; x++)
 					if (!visited.isset(x, y, z))
 					{
 						var isoutside = false;
@@ -187,26 +222,26 @@ var Grids = (function(){
 							frontier.set(v.x, v.y, v.z);
 							// If we expanded to the edge of the bounds, then this
 							//    region is outside.
-							if (v.x == bounds.mins.x || v.x == bounds.maxs.x-1 ||
-								v.y == bounds.mins.y || v.y == bounds.maxs.y-1 ||
-								v.z == bounds.mins.z || v.z == bounds.maxs.z-1)
+							if (v.x == bounds.min.x || v.x == bounds.max.x-1 ||
+								v.y == bounds.min.y || v.y == bounds.max.y-1 ||
+								v.z == bounds.min.z || v.z == bounds.max.z-1)
 								isoutside = true;
 							// Otherwise, expand to the neighbors
 							else
 							{
 								visited.set(v.x, v.y, v.z);
 								if (!visited.isset(v.x-1, v.y, v.z))
-									fringe.insert(voxel(v.x-1, v.y, v.z));
+									fringe.push(voxel(v.x-1, v.y, v.z));
 								if (!visited.isset(v.x+1, v.y, v.z))
-									fringe.insert(voxel(v.x+1, v.y, v.z));
+									fringe.push(voxel(v.x+1, v.y, v.z));
 								if (!visited.isset(v.x, v.y-1, v.z))
-									fringe.insert(voxel(v.x, v.y-1, v.z));
+									fringe.push(voxel(v.x, v.y-1, v.z));
 								if (!visited.isset(v.x, v.y+1, v.z))
-									fringe.insert(voxel(v.x, v.y+1, v.z));
+									fringe.push(voxel(v.x, v.y+1, v.z));
 								if (!visited.isset(v.x, v.y, v.z-1))
-									fringe.insert(voxel(v.x, v.y, v.z-1));
+									fringe.push(voxel(v.x, v.y, v.z-1));
 								if (!visited.isset(v.x, v.y, v.z+1))
-									fringe.insert(voxel(v.x, v.y, v.z+1));
+									fringe.push(voxel(v.x, v.y, v.z+1));
 							}
 						}
 						// Once we've grown this region to completion, check whether it is

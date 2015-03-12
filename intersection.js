@@ -23,7 +23,7 @@ var Intersection = (function(){
 		var fmax = fOrigin + fMaxExtent;
 		if (pdist > fmax + BOX_PLANE_EPSILON)
 			return -1;
-		else if (pidst + BOX_PLANE_EPSILON >= fmin)
+		else if (pdist + BOX_PLANE_EPSILON >= fmin)
 			return 1;
 		else
 			return 0;
@@ -46,7 +46,7 @@ var Intersection = (function(){
 		var abs_dir0 = absolute_edge[i_dir_0];
 		var abs_dir1 = absolute_edge[i_dir_1];
 		var rad = extend[i_comp_0]*abs_dir0 + extend[i_comp_1]*abs_dir1;
-		if (pmin>rad or -rad>pmax)
+		if (pmin>rad || -rad>pmax)
 			return false;
 	}
 	function TEST_CROSS_EDGE_BOX_X_AXIS_MCR(edge,absolute_edge,pointa,pointb,extend)
