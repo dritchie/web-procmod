@@ -12,9 +12,9 @@
 		<script src="lib/three/OrbitControls.js"></script>
 		<script src="lib/dat.gui.min.js"></script>
 		<script src="../webppl/compiled/webppl.min.js"></script>
-		<script src="geometry.js"></script>
-		<script src="grids.js"></script>
-		<script src="intersection.js"></script>
+		<script src="js/geometry.js"></script>
+		<script src="js/grids.js"></script>
+		<script src="js/intersection.js"></script>
 	</head>
 	<body>
 <!-- 		<div>
@@ -148,7 +148,7 @@
 
 				// ------------------------------------------------
 
-				$.get("model.wppl", webppl_compile);
+				$.get("programs/spaceship.wppl", webppl_compile);
 			}
 
 			init();
