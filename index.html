@@ -133,29 +133,6 @@
 				// 	autoCloseBrackets: true
 				// });
 
-				// Add purely-functional merge/combine to THREE geometry objects.
-				THREE.Geometry.prototype.combine = function(other)
-				{
-					if (other !== null)
-					{
-						var g = this.clone();
-						g.merge(other);
-						return g;
-					}
-					else return this;
-				}
-
-				// Any other 'standard' stuff that proc mods will need but that can't go through
-				//    the WebPPL compiler.
-				window.S = {
-					new: function(ctor)
-					{
-						var newobj = Object.create(ctor.prototype);
-						ctor.apply(newobj, Array.prototype.slice.call(arguments, 1));
-						return newobj;
-					}
-				};
-
 				// ------------------------------------------------
 
 				$.get("model.wppl", webppl_compile);
