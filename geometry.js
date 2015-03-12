@@ -106,7 +106,7 @@ var Geo = (function() {
 
 	var vzero = new THREE.Vector3(0, 0, 0);
 
-	function voxelizeTriangle(outgrid, v0, v1, v2, tribb, solid)
+	function voxelizeTriangle(outgrid, v0, v1, v2, tribb)
 	{
 		// If a triangle is perfectly axis-aligned, it will 'span' zero voxels, so the loops below
 		//    will do nothing. To get around this, we expand the bbox a little bit.
@@ -116,16 +116,14 @@ var Geo = (function() {
 		tribb.max.ceil().max(vzero).min(outgrid.dims);
 		var vmin = new THREE.Vector3();
 		var vmax = new THREE.Vector3();
-		var voxel = new THREE.Box3();
 		for (var z = tribb.min.z; z < tribb.max.z; z++)
 			for (var y = tribb.min.y; y < tribb.max.y; y++)
 				for (var x = tribb.min.x; x < tribb.max.x; x++)
 				{
 					vmin.set(x, y, z);
 					vmax.set(x+1, y+1, z+1);
-					voxel.set(vmin, vmax);
 					// Triangle has to intersect voxel
-					if (Intersection.intersectTriangleBBox(voxel.min, voxel.max, v0, v1, v2))
+					if (Intersection.intersectTriangleBBox(vmin, vmax, v0, v1, v2))
 					{
 						outgrid.set(x, y, z);
 					}
@@ -173,7 +171,7 @@ var Geo = (function() {
 			tribb.expandByPoint(p0); tribb.expandByPoint(p1); tribb.expandByPoint(p2);
 			if (tribb.isIntersectionBox(gridbounds))
 			{
-				voxelizeTriangle(outgrid, p0, p1, p2, tribb, solid);
+				voxelizeTriangle(outgrid, p0, p1, p2, tribb);
 				touchedbb.union(tribb);
 			}
 		}

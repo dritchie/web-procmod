@@ -48,6 +48,7 @@ var Intersection = (function(){
 		var rad = extend[i_comp_0]*abs_dir0 + extend[i_comp_1]*abs_dir1;
 		if (pmin>rad || -rad>pmax)
 			return false;
+		return true;
 	}
 	function TEST_CROSS_EDGE_BOX_X_AXIS_MCR(edge,absolute_edge,pointa,pointb,extend)
 	{

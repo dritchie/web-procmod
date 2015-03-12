@@ -48,7 +48,6 @@
 
 			function webppl_compile(code)
 			{
-				var geometry;
 				compiledCode = webppl.compile("(function(){" + code + "})()");
 				webppl_generate();
 			}
@@ -78,15 +77,15 @@
 					}
 					var geometry = bestsamp.toPrimGeo();
 
-					// TEST voxelization
-					var grid = new Grids.BinaryGrid3();
-					geometry.computeBoundingBox();
-					var bounds = geometry.boundingBox;
-					bounds.expandByScalar(0.1);
-					var voxelSize = 0.25;
-					geometry.voxelize(grid, bounds, voxelSize, true);
-					grid.toMesh(geometry, bounds);
-					console.log(grid.numFilledCells());
+					// // TEST voxelization
+					// var grid = new Grids.BinaryGrid3();
+					// geometry.computeBoundingBox();
+					// var bounds = geometry.boundingBox;
+					// bounds.expandByScalar(0.1);
+					// var voxelSize = 0.25;
+					// var solid = true;
+					// geometry.voxelize(grid, bounds, voxelSize, solid);
+					// grid.toMesh(geometry, bounds);
 
 					geometry = geometry.toThreeGeo();
 

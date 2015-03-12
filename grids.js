@@ -90,7 +90,7 @@ var Grids = (function(){
 			var linidx = z*this.dims.y*this.dims.x + y*this.dims.x + x;
 			var baseidx = Math.floor(linidx / BITS_PER_UINT);
 			var localidx = linidx % BITS_PER_UINT;
-			return (this.data[baseidx] && (1 << localidx)) !== 0;
+			return (this.data[baseidx] & (1 << localidx)) !== 0;
 		},
 
 		set: function(x, y, z)
