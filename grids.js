@@ -191,7 +191,7 @@ var Grids = (function(){
 					var y = lerp(bounds.min.y, bounds.max.y, (yi+0.5)/this.dims.y);
 					for (var xi = 0; xi < this.dims.x; xi++)
 					{
-						var x = lerp(bounds.min.x, bounds.max.z, (xi+0.5)/this.dims.x);
+						var x = lerp(bounds.min.x, bounds.max.x, (xi+0.5)/this.dims.x);
 						if (this.isset(xi, yi, zi))
 							Geo.addBox(outgeo, x, y, z, xsize, ysize, zsize);
 					}
