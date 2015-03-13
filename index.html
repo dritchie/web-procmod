@@ -171,9 +171,9 @@
 					targetGrid.clearall();
 					mygeom.voxelize(targetGrid, voxparams.bounds, voxparams.size, true);
 					console.log("Target grid ready.")
-				});
 
-				$.get("programs/spaceship_bbox.wppl", webppl_compile);
+					$.get("programs/spaceship_bbox.wppl", webppl_compile);
+				});
 			}
 
 			init();
