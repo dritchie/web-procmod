@@ -1,14 +1,9 @@
 
-// var voxparams = 
-// {
-// 	size = 0.25		// Desired voxel size
-// 	bounds = ???	// Voxelixation bounds
-// }
+// Assume availability of globals 'targetGrid' and 'voxparams'
 
 var generate = function()
 {
-	var ms = addBody(ModelStates.VoxelizingModelState.create(voxparams));
-	return ms.geometry;
+	return addBody(newState(), 0, -5);
 }
 
 var addBody = function(state, i, rearz)
@@ -18,7 +13,7 @@ var addBody = function(state, i, rearz)
 	var xlen = rets.xlen;
 	var ylen = rets.ylen;
 	var zlen = rets.zlen;
-	var newstate1 = state.addGeometry(rets.bodygeo);
+	var newstate1 = addGeometry(state, rets.bodygeo);
 	var wingprob = wi(i+1, 0.5);
 	// Gen wings?
 	var newstate2 = flip(wingprob) ?
@@ -56,7 +51,7 @@ var addWings = function(state, i, xbase, zlo, zhi)
 	var ylen = rets.ylen;	
 	var zlen = rets.zlen;
 	var zbase = rets.zbase;
-	var newstate = state.addGeometry(rets.winggeo);
+	var newstate = addGeometry(state, rets.winggeo);
 	if (flip(wi(i, 0.6)))
 		return addWings(newstate, i+1, xbase+xlen, zbase-0.5*zlen, zbase+0.5*zlen);
 	else
@@ -82,7 +77,7 @@ var addFin = function(state, i, ybase, zlo, zhi, xmax)
 	var zlen = uniformrel(0.5, 1.0) * (zhi - zlo);
 	var zbase = 0.5*(zlo + zhi);
 	var fingeo = Geo.box(0, ybase + 0.5*ylen, zbase, xlen, ylen, zlen);
-	var newstate = state.addGeometry(fingeo);
+	var newstate = addGeometry(state, fingeo);
 	if (flip(wi(i, 0.2)))
 		return addFin(newstate, i+1, ybase+ylen, zbase-0.5*zlen, zbase+0.5*zlen, xlen);
 	else
@@ -93,6 +88,19 @@ var uniformrel = function(lo, hi)
 {
 	var u = uniform(0, 1);
 	return (1-u)*lo + u*hi;
+}
+
+
+// 'Heuristic' factors whenever we add geometry to the state
+var newState = function()
+{
+	return ModelStates.VoxelizingModelState.create(voxparams);
+}
+var addGeometry = function(state, geo)
+{
+	var newstate = state.addGeometry(geo);
+	factor(newstate.score - state.score);
+	return newstate;
 }
 
 

@@ -28,11 +28,11 @@
 			var scene, camera, renderer, controls, gui, settings;
 			var compiledCode, topK, _trampoline;
 			var model = null;
-			var targetGrid = new Grids.BinaryGrid3();
 			var voxparams =
 			{
 				size: 0.25,
-				bounds: null
+				bounds: null,
+				targetGrid: new Grids.BinaryGrid3()
 			};
 
 			function animate() 
@@ -83,7 +83,7 @@
 							bestsamp = entry.val;
 						} 
 					}
-					var geometry = bestsamp.toPrimGeo().toThreeGeo();
+					var geometry = bestsamp.getCompleteGeometry().toThreeGeo();
 
 					var materials = [
 						new THREE.MeshLambertMaterial({ color: new THREE.Color(.9, .9, .9).getHex(), shading: THREE.FlatShading, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }),
@@ -155,11 +155,12 @@
 					mygeom.fromThreeGeo(geom);
 					voxparams.bounds = mygeom.bbox();
 					voxparams.bounds.expandByScalar(0.1);
-					targetGrid.clearall();
-					mygeom.voxelize(targetGrid, voxparams.bounds, voxparams.size, true);
+					voxparams.targetGrid.clearall();
+					mygeom.voxelize(voxparams.targetGrid, voxparams.bounds, voxparams.size, true);
 					console.log("Target grid ready.")
 
-					$.get("programs/spaceship_bbox.wppl", webppl_compile);
+					// $.get("programs/spaceship_bbox.wppl", webppl_compile);
+					$.get("programs/spaceship_vox.wppl", webppl_compile);
 				});
 			}
 
