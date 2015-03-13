@@ -11,7 +11,6 @@ var Geo = (function() {
 		this.normals = [];
 		this.uvs = [];
 		this.indices = [];
-		this.boundingBox = null;
 	}
 
 	Geo.Geometry.prototype = {
@@ -55,11 +54,11 @@ var Geo = (function() {
 			Geo.Geometry.call(this);
 		},
 
-		computeBoundingBox: function()
+		bbox: function()
 		{
-			if (this.boundingBox == null)
-				this.boundingBox = new THREE.Box3();
-			this.boundingBox.setFromPoints(this.vertices);
+			var box = new THREE.Box3();
+			box.setFromPoints(this.vertices);
+			return box;
 		},
 
 		toThreeGeo: function()
@@ -309,8 +308,7 @@ var Geo = (function() {
 			{
 				if (this.geo !== null)
 				{
-					this.geo.computeBoundingBox();
-					this.boundingBox = this.geo.boundingBox.clone();
+					this.boundingBox = this.geo.bbox();
 					this.next.computeBoundingBox();
 					if (this.next.boundingBox !== null)
 						this.boundingBox.union(this.next.boundingBox);

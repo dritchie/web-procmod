@@ -83,19 +83,7 @@
 							bestsamp = entry.val;
 						} 
 					}
-					var geometry = bestsamp.toPrimGeo();
-
-					// // TEST voxelization
-					// var grid = new Grids.BinaryGrid3();
-					// geometry.computeBoundingBox();
-					// var bounds = geometry.boundingBox;
-					// bounds.expandByScalar(0.1);
-					// var voxelSize = 0.25;
-					// var solid = true;
-					// geometry.voxelize(grid, bounds, voxelSize, solid);
-					// grid.toMesh(geometry, bounds);
-
-					geometry = geometry.toThreeGeo();
+					var geometry = bestsamp.toPrimGeo().toThreeGeo();
 
 					var materials = [
 						new THREE.MeshLambertMaterial({ color: new THREE.Color(.9, .9, .9).getHex(), shading: THREE.FlatShading, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }),
@@ -165,8 +153,7 @@
 					geom.fromBufferGeometry(object.children[0].geometry);
 					var mygeom = new Geo.Geometry();
 					mygeom.fromThreeGeo(geom);
-					mygeom.computeBoundingBox();
-					voxparams.bounds = mygeom.boundingBox.clone();
+					voxparams.bounds = mygeom.bbox();
 					voxparams.bounds.expandByScalar(0.1);
 					targetGrid.clearall();
 					mygeom.voxelize(targetGrid, voxparams.bounds, voxparams.size, true);
