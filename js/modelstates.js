@@ -35,7 +35,7 @@ var ModelStates = (function()
 		ms.geometry = geo;
 		ms.grid = next.grid.clone();
 		geo.voxelize(ms.grid, ms.voxparams.bounds, ms.grid.dims, true);
-		ms.bbox = geo.bbox().union(next.bbox);
+		ms.bbox = geo.getbbox().clone().union(next.bbox);
 		ms.next = next;
 		ms.length = 1 + next.length;
 		return ms;

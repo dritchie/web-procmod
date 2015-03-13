@@ -11,6 +11,7 @@ var Geo = (function() {
 		this.normals = [];
 		this.uvs = [];
 		this.indices = [];
+		this.bbox = null;
 	}
 
 	Geo.Geometry.prototype = {
@@ -54,11 +55,22 @@ var Geo = (function() {
 			Geo.Geometry.call(this);
 		},
 
-		bbox: function()
+		// Computes this.bbox only if it's null
+		// Otherwise, return the cached value
+		getbbox: function()
 		{
-			var box = new THREE.Box3();
-			box.setFromPoints(this.vertices);
-			return box;
+			if (this.bbox == null)
+				this.updatebbox();
+			return this.bbox;
+		},
+
+		// Forcibly recomputes this.bbox
+		updatebbox: function()
+		{
+			if (this.bbox === null)
+				this.bbox = new THREE.Box3();
+			this.bbox.setFromPoints(this.vertices);
+			return this.bbox;
 		},
 
 		toThreeGeo: function()
@@ -127,77 +139,116 @@ var Geo = (function() {
 
 	var vzero = new THREE.Vector3(0, 0, 0);
 
-	function voxelizeTriangle(outgrid, v0, v1, v2, tribb)
-	{
-		// If a triangle is perfectly axis-aligned, it will 'span' zero voxels, so the loops below
-		//    will do nothing. To get around this, we expand the bbox a little bit.
-		// (Take care to ensure that we don't loop over any voxels that are outside the actual grid)
-		tribb.expandByScalar(0.000001);
-		tribb.min.floor().max(vzero);
-		tribb.max.ceil().max(vzero).min(outgrid.dims);
+	var voxelizeTriangle = (function() {
 		var vmin = new THREE.Vector3();
 		var vmax = new THREE.Vector3();
-		for (var z = tribb.min.z; z < tribb.max.z; z++)
-			for (var y = tribb.min.y; y < tribb.max.y; y++)
-				for (var x = tribb.min.x; x < tribb.max.x; x++)
-				{
-					vmin.set(x, y, z);
-					vmax.set(x+1, y+1, z+1);
-					// Triangle has to intersect voxel
-					if (Intersection.intersectTriangleBBox(vmin, vmax, v0, v1, v2))
-					{
-						outgrid.set(x, y, z);
-					}
-				}
-	}
-
-	Geo.Geometry.prototype.voxelize = function(outgrid, bounds, dimsOrSize, solid)
-	{
-		var dims;
-		if (dimsOrSize instanceof THREE.Vector3)
-			dims = dimsOrSize;
-		else
+		return function(outgrid, v0, v1, v2, tribb)
 		{
-			var voxelSize = dimsOrSize;
-			dims = bounds.size().divideScalar(voxelSize).ceil();
+			// If a triangle is perfectly axis-aligned, it will 'span' zero voxels, so the loops below
+			//    will do nothing. To get around this, we expand the bbox a little bit.
+			// (Take care to ensure that we don't loop over any voxels that are outside the actual grid)
+			tribb.expandByScalar(0.000001);
+			tribb.min.floor().max(vzero);
+			tribb.max.ceil().max(vzero).min(outgrid.dims);
+			for (var z = tribb.min.z; z < tribb.max.z; z++)
+				for (var y = tribb.min.y; y < tribb.max.y; y++)
+					for (var x = tribb.min.x; x < tribb.max.x; x++)
+					{
+						vmin.set(x, y, z);
+						vmax.set(x+1, y+1, z+1);
+						// Triangle has to intersect voxel
+						if (Intersection.intersectTriangleBBox(vmin, vmax, v0, v1, v2))
+						{
+							outgrid.set(x, y, z);
+						}
+					}
 		}
-		outgrid.resize(dims);
-		var extents = bounds.size();
-		var xsize = extents.x / dims.x;
-		var ysize = extents.y / dims.y;
-		var zsize = extents.z / dims.z;
+	})();
+
+	Geo.Geometry.prototype.voxelize = (function(){
 		var worldtovox = new THREE.Matrix4();
-		worldtovox.makeScale(1/xsize, 1/ysize, 1/zsize);
 		var translate = new THREE.Matrix4();
-		var origin = bounds.min.clone().negate();
-		translate.makeTranslation(origin.x, origin.y, origin.z);	// bleh, I hate having to use this form...
-		worldtovox.multiply(translate);
-		var numtris = this.indices.length / 3;
-		var gridbounds = new THREE.Box3(vzero, outgrid.dims);
+		var gridbounds = new THREE.Box3();
 		var touchedbb = new THREE.Box3();
 		var p0 = new THREE.Vector3();
 		var p1 = new THREE.Vector3();
 		var p2 = new THREE.Vector3();
 		var tribb = new THREE.Box3();
-		// TODO(?): Parallelize this loop using WebWorkers?
-		for (var i = 0; i < numtris; i++)
+		return function(outgrid, bounds, dimsOrSize, solid)
 		{
-			p0.copy(this.vertices[this.indices[3*i].vertex]);
-			p1.copy(this.vertices[this.indices[3*i + 1].vertex]);
-			p2.copy(this.vertices[this.indices[3*i + 2].vertex]);
-			p0.applyMatrix4(worldtovox);
-			p1.applyMatrix4(worldtovox);
-			p2.applyMatrix4(worldtovox);
-			tribb.makeEmpty();
-			tribb.expandByPoint(p0); tribb.expandByPoint(p1); tribb.expandByPoint(p2);
-			if (tribb.isIntersectionBox(gridbounds))
+			var dims;
+			if (dimsOrSize instanceof THREE.Vector3)
+				dims = dimsOrSize;
+			else
 			{
-				voxelizeTriangle(outgrid, p0, p1, p2, tribb);
-				touchedbb.union(tribb);
+				var voxelSize = dimsOrSize;
+				dims = bounds.size().divideScalar(voxelSize).ceil();
 			}
+			outgrid.resize(dims);
+			var extents = bounds.size();
+			var xsize = extents.x / dims.x;
+			var ysize = extents.y / dims.y;
+			var zsize = extents.z / dims.z;
+			worldtovox.makeScale(1/xsize, 1/ysize, 1/zsize);
+			var origin = bounds.min.clone().negate();
+			translate.makeTranslation(origin.x, origin.y, origin.z);	// bleh, I hate having to use this form...
+			worldtovox.multiply(translate);
+			var numtris = this.indices.length / 3;
+			gridbounds.set(vzero, outgrid.dims);
+			touchedbb.makeEmpty();
+			// TODO(?): Parallelize this loop using WebWorkers?
+			for (var i = 0; i < numtris; i++)
+			{
+				p0.copy(this.vertices[this.indices[3*i].vertex]);
+				p1.copy(this.vertices[this.indices[3*i + 1].vertex]);
+				p2.copy(this.vertices[this.indices[3*i + 2].vertex]);
+				p0.applyMatrix4(worldtovox);
+				p1.applyMatrix4(worldtovox);
+				p2.applyMatrix4(worldtovox);
+				tribb.makeEmpty();
+				tribb.expandByPoint(p0); tribb.expandByPoint(p1); tribb.expandByPoint(p2);
+				if (tribb.isIntersectionBox(gridbounds))
+				{
+					voxelizeTriangle(outgrid, p0, p1, p2, tribb);
+					touchedbb.union(tribb);
+				}
+			}
+			if (solid) outgrid.fillInterior(touchedbb);
 		}
-		if (solid) outgrid.fillInterior(touchedbb);
-	}
+	})();
+
+	// // Intersection testing
+
+	// var contractTri = (function() {
+	// 	var CONTRACT_EPS = 1e-10;
+	// 	var centroid = new THREE.Vector3();
+	// 	var v0mc = new THREE.Vector3();
+	// 	var v1mc = new THREE.Vector3();
+	// 	var v2mc = new THREE.Vector3();
+	// 	return function(v0, v1, v2)
+	// 	{
+	// 		centroid.copy(v0).add(v1).add(v2).multiplyScalar(1/3);
+	// 		v0.sub(v0mc.copy(v0).sub(centroid).multiplyScalar(CONTRACT_EPS));
+	// 		v1.sub(v1mc.copy(v1).sub(centroid).multiplyScalar(CONTRACT_EPS));
+	// 		v2.sub(v1mc.copy(v1).sub(centroid).multiplyScalar(CONTRACT_EPS));
+	// 	}
+	// })();
+
+	// var FUDGE_FACTOR = 1e-10;
+	// Geo.Geometry.prototype.intersects = function(othergeo)
+	// {
+	// 	// First, check that the overall bboxes intersect
+	// 	if (!this.getbbox().isIntersectionBox(other.getbbox()))
+	// 		return false;
+	// 	// Check every triangle against every other triangle
+	// 	// (Check bboxes first, natch)
+	// 	var numThisTris = this.indices.length/3;
+	// 	var numOtherTris = othergeo.indices.length/3;
+	// 	for (var j = 0; j < numSelfTris; j++)
+	// 	{
+	// 		//
+	// 	}
+	// }
 
 	// ------------------------------------------------------------------------
 
@@ -308,7 +359,7 @@ var Geo = (function() {
 			{
 				if (this.geo !== null)
 				{
-					this.boundingBox = this.geo.bbox();
+					this.boundingBox = this.geo.getbbox().clone();
 					this.next.computeBoundingBox();
 					if (this.next.boundingBox !== null)
 						this.boundingBox.union(this.next.boundingBox);

@@ -106,9 +106,9 @@ var addGeometry = function(state, geo)
 
 // return generate();
 
-// var N = 1
+// var N = 10
 var N = 1000
-return MH(generate, N, false, true);
+return MH(generate, N, true, true);
 
 
 

@@ -153,13 +153,12 @@
 					geom.fromBufferGeometry(object.children[0].geometry);
 					var mygeom = new Geo.Geometry();
 					mygeom.fromThreeGeo(geom);
-					voxparams.bounds = mygeom.bbox();
+					voxparams.bounds = mygeom.getbbox().clone();
 					voxparams.bounds.expandByScalar(0.1);
 					voxparams.targetGrid.clearall();
 					mygeom.voxelize(voxparams.targetGrid, voxparams.bounds, voxparams.size, true);
 					console.log("Target grid ready.")
 
-					// $.get("programs/spaceship_bbox.wppl", webppl_compile);
 					$.get("programs/spaceship_vox.wppl", webppl_compile);
 				});
 			}
