@@ -247,13 +247,13 @@ var Geo = (function() {
 		return function(othergeo)
 		{
 			// First, check that the overall bboxes intersect
-			if (!this.getbbox().isIntersectionBox(other.getbbox()))
+			if (!this.getbbox().isIntersectionBox(othergeo.getbbox()))
 				return false;
 			// Check every triangle against every other triangle
 			// (Check bboxes first, natch)
 			var numThisTris = this.indices.length/3;
 			var numOtherTris = othergeo.indices.length/3;
-			for (var j = 0; j < numSelfTris; j++)
+			for (var j = 0; j < numThisTris; j++)
 			{
 				u0.copy(this.vertices[this.indices[3*j].vertex]);
 				u1.copy(this.vertices[this.indices[3*j + 1].vertex]);
@@ -265,9 +265,9 @@ var Geo = (function() {
 				{
 					for (var i = 0; i < numOtherTris; i++)
 					{
-						v0.copy(othergeo.vertices[othergeo.indices[3*j].vertex]);
-						v1.copy(othergeo.vertices[othergeo.indices[3*j + 1].vertex]);
-						v2.copy(othergeo.vertices[othergeo.indices[3*j + 2].vertex]);
+						v0.copy(othergeo.vertices[othergeo.indices[3*i].vertex]);
+						v1.copy(othergeo.vertices[othergeo.indices[3*i + 1].vertex]);
+						v2.copy(othergeo.vertices[othergeo.indices[3*i + 2].vertex]);
 						contractTri(v0, v1, v2);
 						othertribbox.makeEmpty();
 						othertribbox.expandByPoint(u0); othertribbox.expandByPoint(u1); othertribbox.expandByPoint(u2);

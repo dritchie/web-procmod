@@ -91,7 +91,6 @@ var uniformrel = function(lo, hi)
 }
 
 
-// 'Heuristic' factors whenever we add geometry to the state
 var newState = function()
 {
 	return ModelStates.VoxelizingModelState.create(voxparams);
@@ -99,7 +98,10 @@ var newState = function()
 var addGeometry = function(state, geo)
 {
 	var newstate = state.addGeometry(geo);
-	factor(newstate.score - state.score);
+	// If the score isn't already -Infinity, insert a new
+	//    heuristic factor
+	if (state.score > -Infinity)
+		factor(newstate.score - state.score);
 	return newstate;
 }
 

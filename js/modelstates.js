@@ -48,13 +48,41 @@ var ModelStates = (function()
 		addGeometry: function(geo)
 		{
 			var newstate = ModelStates.VoxelizingModelState.extend(geo, this);
-			var percentSame = this.voxparams.targetGrid.percentCellsEqualPadded(newstate.grid);
-			var targetExtent = voxparams.bounds.size();
-			var extralo = voxparams.bounds.min.clone().sub(newstate.bbox.min).clampScalar(0, Infinity).divide(targetExtent);
-			var extrahi = newstate.bbox.max.clone().sub(voxparams.bounds.max).clampScalar(0, Infinity).divide(targetExtent);
-			var percentOutside = extralo.x + extralo.y + extralo.z + extrahi.x + extrahi.y + extrahi.z;
-			newstate.score = gaussianERP.score([1, 0.02], percentSame) + gaussianERP.score([0, 0.02], percentOutside);
+			if (this.score > -Infinity)
+			{
+				// If adding this new geometry results in a self-intersection, then
+				//    the score immediately drops to log(0).
+				if (this.intersects(geo))
+					newstate.score = -Infinity;
+				else
+				{
+					var percentSame = this.voxparams.targetGrid.percentCellsEqualPadded(newstate.grid);
+					var targetExtent = voxparams.bounds.size();
+					var extralo = voxparams.bounds.min.clone().sub(newstate.bbox.min).clampScalar(0, Infinity).divide(targetExtent);
+					var extrahi = newstate.bbox.max.clone().sub(voxparams.bounds.max).clampScalar(0, Infinity).divide(targetExtent);
+					var percentOutside = extralo.x + extralo.y + extralo.z + extrahi.x + extrahi.y + extrahi.z;
+					newstate.score = gaussianERP.score([1, 0.02], percentSame) + gaussianERP.score([0, 0.02], percentOutside);
+				}
+			}
 			return newstate;
+		},
+
+		// The linear chain of states acts like a one-dimesional BVH.
+		intersects: function(geo)
+		{
+			var geobbox = geo.getbbox();
+			// Walk down the chain of states, looking for intersections.
+			for (var currstate = this; currstate !== null; currstate = currstate.next)
+			{
+				// If at any point the new geo's bbox no longer intersects the accumulated state
+				//    bbox, we can bail out with a false.
+				if (!geobbox.isIntersectionBox(currstate.bbox))
+					return false;
+				// If we find an intersection, bail out with a true.
+				if (geo.intersects(currstate.geometry))
+					return true;
+			}
+			return false;
 		},
 
 		getCompleteGeometry: function()
@@ -71,3 +99,6 @@ var ModelStates = (function()
 	return ModelStates;
 
 })();
+
+
+

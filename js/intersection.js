@@ -279,7 +279,7 @@ var Intersection = (function(){
 			// Coplanarity robustness check
 			if (Math.abs(du0) < EPSILON) du0 = 0;
 			if (Math.abs(du1) < EPSILON) du1 = 0;
-			if (Math.abs(du2) < EPSILON) du1 = 0;
+			if (Math.abs(du2) < EPSILON) du2 = 0;
 			// Same sign on all + not equal 0 --> no intersection
 			var du0du1 = du0*du1;
 			var du0du2 = du0*du2;
@@ -296,7 +296,7 @@ var Intersection = (function(){
 			// Coplanarity robustness check
 			if (Math.abs(dv0) < EPSILON) dv0 = 0.0;
 			if (Math.abs(dv1) < EPSILON) dv1 = 0.0;
-			if (Math.abs(dv2) < EPSILON) du1 = 0.0;
+			if (Math.abs(dv2) < EPSILON) dv2 = 0.0;
 			// Same sign on all + not equal 0 --> no intersection
 			var dv0dv1 = dv0*dv1;
 			var dv0dv2 = dv0*dv2;
