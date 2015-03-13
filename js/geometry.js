@@ -217,38 +217,74 @@ var Geo = (function() {
 		}
 	})();
 
-	// // Intersection testing
+	// Intersection testing
 
-	// var contractTri = (function() {
-	// 	var CONTRACT_EPS = 1e-10;
-	// 	var centroid = new THREE.Vector3();
-	// 	var v0mc = new THREE.Vector3();
-	// 	var v1mc = new THREE.Vector3();
-	// 	var v2mc = new THREE.Vector3();
-	// 	return function(v0, v1, v2)
-	// 	{
-	// 		centroid.copy(v0).add(v1).add(v2).multiplyScalar(1/3);
-	// 		v0.sub(v0mc.copy(v0).sub(centroid).multiplyScalar(CONTRACT_EPS));
-	// 		v1.sub(v1mc.copy(v1).sub(centroid).multiplyScalar(CONTRACT_EPS));
-	// 		v2.sub(v1mc.copy(v1).sub(centroid).multiplyScalar(CONTRACT_EPS));
-	// 	}
-	// })();
+	var contractTri = (function() {
+		var CONTRACT_EPS = 1e-10;
+		var centroid = new THREE.Vector3();
+		var v0mc = new THREE.Vector3();
+		var v1mc = new THREE.Vector3();
+		var v2mc = new THREE.Vector3();
+		return function(v0, v1, v2)
+		{
+			centroid.copy(v0).add(v1).add(v2).multiplyScalar(1/3);
+			v0.sub(v0mc.copy(v0).sub(centroid).multiplyScalar(CONTRACT_EPS));
+			v1.sub(v1mc.copy(v1).sub(centroid).multiplyScalar(CONTRACT_EPS));
+			v2.sub(v1mc.copy(v1).sub(centroid).multiplyScalar(CONTRACT_EPS));
+		}
+	})();
 
-	// var FUDGE_FACTOR = 1e-10;
-	// Geo.Geometry.prototype.intersects = function(othergeo)
-	// {
-	// 	// First, check that the overall bboxes intersect
-	// 	if (!this.getbbox().isIntersectionBox(other.getbbox()))
-	// 		return false;
-	// 	// Check every triangle against every other triangle
-	// 	// (Check bboxes first, natch)
-	// 	var numThisTris = this.indices.length/3;
-	// 	var numOtherTris = othergeo.indices.length/3;
-	// 	for (var j = 0; j < numSelfTris; j++)
-	// 	{
-	// 		//
-	// 	}
-	// }
+	Geo.Geometry.prototype.intersects = (function() {
+		var FUDGE_FACTOR = 1e-10;
+		var u0 = new THREE.Vector3();
+		var u1 = new THREE.Vector3();
+		var u2 = new THREE.Vector3();
+		var v0 = new THREE.Vector3();
+		var v1 = new THREE.Vector3();
+		var v2 = new THREE.Vector3();
+		var thistribbox = new THREE.Box3();
+		var othertribbox = new THREE.Box3();
+		return function(othergeo)
+		{
+			// First, check that the overall bboxes intersect
+			if (!this.getbbox().isIntersectionBox(other.getbbox()))
+				return false;
+			// Check every triangle against every other triangle
+			// (Check bboxes first, natch)
+			var numThisTris = this.indices.length/3;
+			var numOtherTris = othergeo.indices.length/3;
+			for (var j = 0; j < numSelfTris; j++)
+			{
+				u0.copy(this.vertices[this.indices[3*j].vertex]);
+				u1.copy(this.vertices[this.indices[3*j + 1].vertex]);
+				u2.copy(this.vertices[this.indices[3*j + 2].vertex]);
+				contractTri(u0, u1, u2);
+				thistribbox.makeEmpty();
+				thistribbox.expandByPoint(u0); thistribbox.expandByPoint(u1); thistribbox.expandByPoint(u2);
+				if (thistribbox.isIntersectionBox(othergeo.getbbox()))
+				{
+					for (var i = 0; i < numOtherTris; i++)
+					{
+						v0.copy(othergeo.vertices[othergeo.indices[3*j].vertex]);
+						v1.copy(othergeo.vertices[othergeo.indices[3*j + 1].vertex]);
+						v2.copy(othergeo.vertices[othergeo.indices[3*j + 2].vertex]);
+						contractTri(v0, v1, v2);
+						othertribbox.makeEmpty();
+						othertribbox.expandByPoint(u0); othertribbox.expandByPoint(u1); othertribbox.expandByPoint(u2);
+						if (thistribbox.isIntersectionBox(othertribbox))
+							if (Intersection.intersectTriangleTriangle(u0, u1, u2, v0, v1, v2, false, FUDGE_FACTOR))
+								return true;
+					}
+				}
+			}
+			return false;
+		}
+	})();
+
+	Geo.Geometry.prototype.selfIntersects = function()
+	{
+		return this.intersects(this);
+	}
 
 	// ------------------------------------------------------------------------
 
