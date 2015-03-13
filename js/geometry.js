@@ -14,8 +14,6 @@ var Geo = (function() {
 		this.boundingBox = null;
 	}
 
-	Geo.new = function() { return new Geo.Geometry(); }
-
 	Geo.Geometry.prototype = {
 
 		constructor: Geo.Geometry,
@@ -99,6 +97,30 @@ var Geo = (function() {
 				}
 			}
 			return threegeo;
+		},
+
+		// Assumes no UVs (just vertices and normals)
+		fromThreeGeo: function(threegeo)
+		{
+			this.clear();
+			// Copy vertices
+			// Prep normals (we'll just grab vertexNormals per face)
+			for (var i = 0; i < threegeo.vertices.length; i++)
+			{
+				this.vertices.push(threegeo.vertices[i].clone());
+				this.normals.push(new THREE.Vector3());
+			}
+			// Copy faces and normals
+			for (var i = 0; i < threegeo.faces.length; i++)
+			{
+				var f = threegeo.faces[i];
+				this.normals[f.a].copy(f.vertexNormals[0]);
+				this.normals[f.b].copy(f.vertexNormals[1]);
+				this.normals[f.c].copy(f.vertexNormals[2]);
+				this.indices.push({vertex: f.a, normal: f.a, uv: -1});
+				this.indices.push({vertex: f.b, normal: f.b, uv: -1});
+				this.indices.push({vertex: f.c, normal: f.c, uv: -1});
+			}
 		}
 	}
 
@@ -256,7 +278,7 @@ var Geo = (function() {
 		this.boundingBox = null;
 	}
 
-	Geo.newChain = function(geo, next) { return new Geo.GeometryChain(geo, next); }
+	Geo.GeometryChain.create = function(geo, next) { return new Geo.GeometryChain(geo, next); }
 
 	Geo.GeometryChain.prototype = {
 

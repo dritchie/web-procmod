@@ -1,0 +1,110 @@
+
+// var targetWidth = 4.0;
+// var targetLength = 25.0;
+var targetWidth = 10.0;
+var targetLength = 10.0;
+
+var generate = function()
+{
+	var geo = addBody(Geo.GeometryChain.create(), 0, -5);
+	geo.computeBoundingBox();
+	var bbox = geo.boundingBox;
+	var extents = bbox.size();
+	gaussianFactor(targetWidth, 0.25, extents.x);
+	gaussianFactor(targetLength, 0.25, extents.z);
+	return geo;
+}
+
+var addBody = function(geo, i, rearz)
+{
+	// Gen new body segment
+	var rets = genBodySeg(rearz);
+	var xlen = rets.xlen;
+	var ylen = rets.ylen;
+	var zlen = rets.zlen;
+	var newgeo1 = geo.combine(rets.bodygeo);
+	var wingprob = wi(i+1, 0.5);
+	// Gen wings?
+	var newgeo2 = flip(wingprob) ?
+						addWings(newgeo1, 0, 0.5*xlen, rearz+0.5, rearz+zlen-0.5)
+						:
+						newgeo1;
+	// Gen fin?
+	var finprob = 0.7;
+	var newgeo3 = flip(finprob) ?
+						addFin(newgeo2, 0, 0.5*ylen, rearz, rearz+zlen, 0.6*xlen)
+						:
+						newgeo2;
+	// Continue generating?
+	if (flip(wi(i, 0.4)))
+		return addBody(newgeo3, i+1, rearz+zlen);
+	else
+		return newgeo3;
+}
+
+var wi = function(i, w) { return Math.exp(-w*i); }
+
+var genBodySeg = function(rearz)
+{
+	var xlen = uniformrel(1, 3);
+	var ylen = uniformrel(.5, 1) * xlen;
+	var zlen = uniformrel(2, 5);
+	var bodygeo = Geo.box(0, 0, rearz + 0.5*zlen, xlen, ylen, zlen);
+	return { xlen: xlen, ylen: ylen, zlen: zlen, bodygeo: bodygeo };
+}
+
+var addWings = function(geo, i, xbase, zlo, zhi)
+{
+	var rets = genWingSeg(xbase, zlo, zhi);
+	var xlen = rets.xlen;
+	var ylen = rets.ylen;	
+	var zlen = rets.zlen;
+	var zbase = rets.zbase;
+	var newgeo = geo.combine(rets.winggeo);
+	if (flip(wi(i, 0.6)))
+		return addWings(newgeo, i+1, xbase+xlen, zbase-0.5*zlen, zbase+0.5*zlen);
+	else
+		return newgeo;
+}
+
+var genWingSeg = function(xbase, zlo, zhi)
+{
+	var zbase = uniformrel(zlo, zhi);
+	var xlen = uniformrel(0.25, 2.0);
+	var ylen = uniformrel(0.25, 1.25);
+	var zlen = uniformrel(0.5, 4.0);
+	var winggeo1 = Geo.box(xbase+0.5*xlen, 0, zbase, xlen, ylen, zlen);
+	var winggeo2 = Geo.box(-(xbase + 0.5*xlen), 0, zbase, xlen, ylen, zlen);
+	winggeo1.merge(winggeo2);
+	return { xlen: xlen, ylen: ylen, zlen: zlen, zbase: zbase, winggeo: winggeo1 }
+}
+
+var addFin = function(geo, i, ybase, zlo, zhi, xmax)
+{
+	var xlen = uniformrel(0.5, 1.0) * xmax;
+	var ylen = uniformrel(0.1, 0.5);
+	var zlen = uniformrel(0.5, 1.0) * (zhi - zlo);
+	var zbase = 0.5*(zlo + zhi);
+	var fingeo = Geo.box(0, ybase + 0.5*ylen, zbase, xlen, ylen, zlen);
+	var newgeo = geo.combine(fingeo);
+	if (flip(wi(i, 0.2)))
+		return addFin(newgeo, i+1, ybase+ylen, zbase-0.5*zlen, zbase+0.5*zlen, xlen);
+	else
+		return newgeo;
+}
+
+var uniformrel = function(lo, hi)
+{
+	var u = uniform(0, 1);
+	return (1-u)*lo + u*hi;
+}
+
+// return generate();
+
+// var N = 1
+var N = 1000
+return MH(generate, N, false, true);
+
+
+
+

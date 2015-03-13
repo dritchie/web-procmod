@@ -80,9 +80,12 @@ var Grids = (function(){
 
 		clearall: function()
 		{
-			var n = this.numuints();
-			for (var i = 0; i < n; i++)
-				this.data[i] = 0;
+			if (this.data !== null)
+			{
+				var n = this.numuints();
+				for (var i = 0; i < n; i++)
+					this.data[i] = 0;
+			}
 		},
 
 		isset: function(x, y, z)

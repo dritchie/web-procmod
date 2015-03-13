@@ -1,45 +1,41 @@
 
-// var targetWidth = 4.0;
-// var targetLength = 25.0;
-var targetWidth = 10.0;
-var targetLength = 10.0;
+// var voxparams = 
+// {
+// 	size = 0.25		// Desired voxel size
+// 	bounds = ???	// Voxelixation bounds
+// }
 
 var generate = function()
 {
-	var geo = addBody(Geo.newChain(), 0, -5);
-	geo.computeBoundingBox();
-	var bbox = geo.boundingBox;
-	var extents = bbox.size();
-	gaussianFactor(targetWidth, 0.25, extents.x);
-	gaussianFactor(targetLength, 0.25, extents.z);
-	return geo;
+	var ms = addBody(ModelStates.VoxelizingModelState.create(voxparams));
+	return ms.geometry;
 }
 
-var addBody = function(geo, i, rearz)
+var addBody = function(state, i, rearz)
 {
 	// Gen new body segment
 	var rets = genBodySeg(rearz);
 	var xlen = rets.xlen;
 	var ylen = rets.ylen;
 	var zlen = rets.zlen;
-	var newgeo1 = geo.combine(rets.bodygeo);
+	var newstate1 = state.addGeometry(rets.bodygeo);
 	var wingprob = wi(i+1, 0.5);
 	// Gen wings?
-	var newgeo2 = flip(wingprob) ?
-						addWings(newgeo1, 0, 0.5*xlen, rearz+0.5, rearz+zlen-0.5)
+	var newstate2 = flip(wingprob) ?
+						addWings(newstate1, 0, 0.5*xlen, rearz+0.5, rearz+zlen-0.5)
 						:
-						newgeo1;
+						newstate1;
 	// Gen fin?
 	var finprob = 0.7;
-	var newgeo3 = flip(finprob) ?
-						addFin(newgeo2, 0, 0.5*ylen, rearz, rearz+zlen, 0.6*xlen)
+	var newstate3 = flip(finprob) ?
+						addFin(newstate2, 0, 0.5*ylen, rearz, rearz+zlen, 0.6*xlen)
 						:
-						newgeo2;
+						newstate2;
 	// Continue generating?
 	if (flip(wi(i, 0.4)))
-		return addBody(newgeo3, i+1, rearz+zlen);
+		return addBody(newstate3, i+1, rearz+zlen);
 	else
-		return newgeo3;
+		return newstate3;
 }
 
 var wi = function(i, w) { return Math.exp(-w*i); }
@@ -53,18 +49,18 @@ var genBodySeg = function(rearz)
 	return { xlen: xlen, ylen: ylen, zlen: zlen, bodygeo: bodygeo };
 }
 
-var addWings = function(geo, i, xbase, zlo, zhi)
+var addWings = function(state, i, xbase, zlo, zhi)
 {
 	var rets = genWingSeg(xbase, zlo, zhi);
 	var xlen = rets.xlen;
 	var ylen = rets.ylen;	
 	var zlen = rets.zlen;
 	var zbase = rets.zbase;
-	var newgeo = geo.combine(rets.winggeo);
+	var newstate = state.addGeometry(rets.winggeo);
 	if (flip(wi(i, 0.6)))
-		return addWings(newgeo, i+1, xbase+xlen, zbase-0.5*zlen, zbase+0.5*zlen);
+		return addWings(newstate, i+1, xbase+xlen, zbase-0.5*zlen, zbase+0.5*zlen);
 	else
-		return newgeo;
+		return newstate;
 }
 
 var genWingSeg = function(xbase, zlo, zhi)
@@ -79,18 +75,18 @@ var genWingSeg = function(xbase, zlo, zhi)
 	return { xlen: xlen, ylen: ylen, zlen: zlen, zbase: zbase, winggeo: winggeo1 }
 }
 
-var addFin = function(geo, i, ybase, zlo, zhi, xmax)
+var addFin = function(state, i, ybase, zlo, zhi, xmax)
 {
 	var xlen = uniformrel(0.5, 1.0) * xmax;
 	var ylen = uniformrel(0.1, 0.5);
 	var zlen = uniformrel(0.5, 1.0) * (zhi - zlo);
 	var zbase = 0.5*(zlo + zhi);
 	var fingeo = Geo.box(0, ybase + 0.5*ylen, zbase, xlen, ylen, zlen);
-	var newgeo = geo.combine(fingeo);
+	var newstate = state.addGeometry(fingeo);
 	if (flip(wi(i, 0.2)))
-		return addFin(newgeo, i+1, ybase+ylen, zbase-0.5*zlen, zbase+0.5*zlen, xlen);
+		return addFin(newstate, i+1, ybase+ylen, zbase-0.5*zlen, zbase+0.5*zlen, xlen);
 	else
-		return newgeo;
+		return newstate;
 }
 
 var uniformrel = function(lo, hi)
@@ -98,6 +94,7 @@ var uniformrel = function(lo, hi)
 	var u = uniform(0, 1);
 	return (1-u)*lo + u*hi;
 }
+
 
 // return generate();
 

@@ -10,9 +10,11 @@
 		<script src="lib/jquery-2.1.3.min.js"></script>
 		<script src="lib/three/three.min.js"></script>
 		<script src="lib/three/OrbitControls.js"></script>
+		<script src="lib/three/OBJLoader.js"></script>
 		<script src="lib/dat.gui.min.js"></script>
 		<script src="../webppl/compiled/webppl.min.js"></script>
 		<script src="js/geometry.js"></script>
+		<script src="js/modelstates.js"></script>
 		<script src="js/grids.js"></script>
 		<script src="js/intersection.js"></script>
 	</head>
@@ -26,6 +28,12 @@
 			var scene, camera, renderer, controls, gui, settings;
 			var compiledCode, topK, _trampoline;
 			var model = null;
+			var targetGrid = new Grids.BinaryGrid3();
+			var voxparams =
+			{
+				size: 0.25,
+				bounds: null
+			};
 
 			function animate() 
 			{
@@ -148,7 +156,24 @@
 
 				// ------------------------------------------------
 
-				$.get("programs/spaceship.wppl", webppl_compile);
+				var loader = new THREE.OBJLoader();
+				loader.load("targets/shipProxy2.obj", function(object)
+				{
+					// Returns an Object3D which has one Mesh as a child.
+					// The mesh's geometry is a BufferGeometry.
+					var geom = new THREE.Geometry();
+					geom.fromBufferGeometry(object.children[0].geometry);
+					var mygeom = new Geo.Geometry();
+					mygeom.fromThreeGeo(geom);
+					mygeom.computeBoundingBox();
+					voxparams.bounds = mygeom.boundingBox.clone();
+					voxparams.bounds.expandByScalar(0.1);
+					targetGrid.clearall();
+					mygeom.voxelize(targetGrid, voxparams.bounds, voxparams.size, true);
+					console.log("Target grid ready.")
+				});
+
+				$.get("programs/spaceship_bbox.wppl", webppl_compile);
 			}
 
 			init();
