@@ -214,54 +214,59 @@ var Grids = (function(){
 	};
 
 	// Flood-fill interior of part of a hollow voxel grid.
-	function voxel(x, y, z) { return {x: x, y: y, z: z}; }
-	Grids.BinaryGrid3.prototype.fillInterior = function(bounds)
-	{
-		var visited = this.clone();		// Already-filled cells count as visited.
-		var frontier = new Grids.BinaryGrid3(this.dims);
-		// Start expanding from every cell we haven't yet visisted.
-		for (var z = bounds.min.z; z < bounds.max.z; z++)
-			for (var y = bounds.min.y; y < bounds.max.y; y++)
-				for (var x = bounds.min.x; x < bounds.max.x; x++)
-					if (!visited.isset(x, y, z))
-					{
-						var isoutside = false;
-						var fringe = [];
-						fringe.push(voxel(x,y,z));
-						while (fringe.length > 0)
+	Grids.BinaryGrid3.prototype.fillInterior = (function() {
+		function voxel(x, y, z) { return {x: x, y: y, z: z}; }
+		var visited = new Grids.BinaryGrid3();
+		var frontier = new Grids.BinaryGrid3();
+		var fringe = null;
+		return function(bounds)
+		{
+			visited.copy(this);		// Already-filled cells count as visited.
+			frontier.resize(this.dims);
+			// Start expanding from every cell we haven't yet visisted.
+			for (var z = bounds.min.z; z < bounds.max.z; z++)
+				for (var y = bounds.min.y; y < bounds.max.y; y++)
+					for (var x = bounds.min.x; x < bounds.max.x; x++)
+						if (!visited.isset(x, y, z))
 						{
-							var v = fringe.pop();
-							frontier.set(v.x, v.y, v.z);
-							// If we expanded to the edge of the bounds, then this
-							//    region is outside.
-							if (v.x == bounds.min.x || v.x == bounds.max.x-1 ||
-								v.y == bounds.min.y || v.y == bounds.max.y-1 ||
-								v.z == bounds.min.z || v.z == bounds.max.z-1)
-								isoutside = true;
-							// Otherwise, expand to the neighbors
-							else
+							frontier.clearall();
+							var isoutside = false;
+							fringe = [];
+							fringe.push(voxel(x,y,z));
+							while (fringe.length > 0)
 							{
-								visited.set(v.x, v.y, v.z);
-								if (!visited.isset(v.x-1, v.y, v.z))
-									fringe.push(voxel(v.x-1, v.y, v.z));
-								if (!visited.isset(v.x+1, v.y, v.z))
-									fringe.push(voxel(v.x+1, v.y, v.z));
-								if (!visited.isset(v.x, v.y-1, v.z))
-									fringe.push(voxel(v.x, v.y-1, v.z));
-								if (!visited.isset(v.x, v.y+1, v.z))
-									fringe.push(voxel(v.x, v.y+1, v.z));
-								if (!visited.isset(v.x, v.y, v.z-1))
-									fringe.push(voxel(v.x, v.y, v.z-1));
-								if (!visited.isset(v.x, v.y, v.z+1))
-									fringe.push(voxel(v.x, v.y, v.z+1));
+								var v = fringe.pop();
+								frontier.set(v.x, v.y, v.z);
+								// If we expanded to the edge of the bounds, then this
+								//    region is outside.
+								if (v.x == bounds.min.x || v.x == bounds.max.x-1 ||
+									v.y == bounds.min.y || v.y == bounds.max.y-1 ||
+									v.z == bounds.min.z || v.z == bounds.max.z-1)
+									isoutside = true;
+								// Otherwise, expand to the neighbors
+								else
+								{
+									visited.set(v.x, v.y, v.z);
+									if (!visited.isset(v.x-1, v.y, v.z))
+										fringe.push(voxel(v.x-1, v.y, v.z));
+									if (!visited.isset(v.x+1, v.y, v.z))
+										fringe.push(voxel(v.x+1, v.y, v.z));
+									if (!visited.isset(v.x, v.y-1, v.z))
+										fringe.push(voxel(v.x, v.y-1, v.z));
+									if (!visited.isset(v.x, v.y+1, v.z))
+										fringe.push(voxel(v.x, v.y+1, v.z));
+									if (!visited.isset(v.x, v.y, v.z-1))
+										fringe.push(voxel(v.x, v.y, v.z-1));
+									if (!visited.isset(v.x, v.y, v.z+1))
+										fringe.push(voxel(v.x, v.y, v.z+1));
+								}
 							}
+							// Once we've grown this region to completion, check whether it is
+							//    inside or outside. If inside, add it to this.
+							if (!isoutside) this.unionInPlace(frontier);
 						}
-						// Once we've grown this region to completion, check whether it is
-						//    inside or outside. If inside, add it to this.
-						if (!isoutside) this.unionInPlace(frontier);
-						frontier.clearall();
-					}
-	}
+		}
+	})();
 
 	// ------------------------------------------------------------------------
 
