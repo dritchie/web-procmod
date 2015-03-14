@@ -47,9 +47,13 @@ var ModelStates = (function()
 
 		addGeometry: function(geo)
 		{
-			var newstate = ModelStates.VoxelizingModelState.extend(geo, this);
+			var newstate = this;
+			// We don't even bother updating the state if the score is already -Infinity.
+			// (This is sort of like bailing out early: the program runs to completion, but
+			//   it doesn't do any of the really expensive stuff).
 			if (this.score > -Infinity)
 			{
+				newstate = ModelStates.VoxelizingModelState.extend(geo, this);
 				// If adding this new geometry results in a self-intersection, then
 				//    the score immediately drops to log(0).
 				if (this.intersects(geo))
