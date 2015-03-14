@@ -15,6 +15,20 @@ var Grids = (function(){
 		return (x + (x >> 12) + (x >> 24)) & 0x3f;
 	}
 
+	// Empty Uint32Arrays, for fast array clearing using .set
+	// (Stop-gap until browsers support ES6's .fill method)
+	var emptyArrays = {}
+	function getEmptyArray(length)
+	{
+		var res = emptyArrays[length];
+		if (res === undefined)
+		{
+			res = new Uint32Array(length);
+			emptyArrays[length] = res;
+		}
+		return res;
+	}
+
 	// ------------------------------------------------------------------------
 
 	// 3D compressed binary grid representation
@@ -33,7 +47,7 @@ var Grids = (function(){
 
 		numuints: function()
 		{
-			return (this.numcells() + BITS_PER_UINT - 1) / BITS_PER_UINT;
+			return Math.floor((this.numcells() + BITS_PER_UINT - 1) / BITS_PER_UINT);
 		},
 
 		numcells: function()
@@ -53,7 +67,7 @@ var Grids = (function(){
 
 		numCellsPadded: function()
 		{
-			return this.numuints() * BITS_PER_UINT;
+			return this.data.length * BITS_PER_UINT;
 		},
 
 		resize: function(dims)
@@ -82,9 +96,7 @@ var Grids = (function(){
 		{
 			if (this.data !== null)
 			{
-				var n = this.numuints();
-				for (var i = 0; i < n; i++)
-					this.data[i] = 0;
+				this.data.set(getEmptyArray(this.data.length));
 			}
 		},
 
@@ -129,9 +141,8 @@ var Grids = (function(){
 		unionInPlace: function(other)
 		{
 			this.assertSameDims(other);
-			var n = this.numuints();
-			for (var i = 0; i < n; i++)
-				this.data[i] |= other.data[i];
+			var n = this.data.length;
+			while(n--) { this.data[n] |= other.data[n]; }
 		},
 
 		union: function(other)
@@ -162,11 +173,9 @@ var Grids = (function(){
 		{
 			this.assertSameDims(other);
 			var num = 0;
-			var n = this.numuints();
-			for (var i = 0; i < n; i++)
-			{
-				var x = ~(this.data[i] ^ other.data[i]);
-				num += popcount(x);
+			var n = this.data.length;
+			while(n--) {
+				num += popcount(~(this.data[n] ^ other.data[n]));
 			}
 			return num;
 		},
