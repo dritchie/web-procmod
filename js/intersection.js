@@ -95,8 +95,7 @@ var Intersection = (function(){
 			v3.copy(p2).sub(center);
 			// First
 			diff.copy(v2).sub(v1);
-			abs_diff.copy(diff);
-			abs_diff.x = Math.abs(abs_diff.x); abs_diff.y = Math.abs(abs_diff.y); abs_diff.z = Math.abs(abs_diff.z);
+			abs_diff.set(Math.abs(diff.x), Math.abs(diff.y), Math.abs(diff.z));
 			if (!TEST_CROSS_EDGE_BOX_X_AXIS_MCR(diff,abs_diff,v1,v3,extent))
 				return false;
 			if (!TEST_CROSS_EDGE_BOX_Y_AXIS_MCR(diff,abs_diff,v1,v3,extent))

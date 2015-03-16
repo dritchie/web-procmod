@@ -154,12 +154,16 @@ var Geo = (function() {
 				for (var y = tribb.min.y; y < tribb.max.y; y++)
 					for (var x = tribb.min.x; x < tribb.max.x; x++)
 					{
-						vmin.set(x, y, z);
-						vmax.set(x+1, y+1, z+1);
-						// Triangle has to intersect voxel
-						if (Intersection.intersectTriangleBBox(vmin, vmax, v0, v1, v2))
+						// Don't bother checking this voxel if it is already set.
+						if (!outgrid.isset(x, y, z))
 						{
-							outgrid.set(x, y, z);
+							vmin.set(x, y, z);
+							vmax.set(x+1, y+1, z+1);
+							// Triangle has to intersect voxel
+							if (Intersection.intersectTriangleBBox(vmin, vmax, v0, v1, v2))
+							{
+								outgrid.set(x, y, z);
+							}
 						}
 					}
 		}
