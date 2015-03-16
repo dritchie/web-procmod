@@ -159,13 +159,13 @@
 					mygeom.voxelize(voxparams.targetGrid, voxparams.bounds, voxparams.size, true);
 					console.log("Target grid ready.")
 
-					$.get("programs/spaceship.wppl", webppl_compile);
+					// $.get("programs/spaceship.wppl", webppl_compile);
 				});
 
-				// var geometry = Geo.Shapes.Cylinder(0, 0, 0, 5, 8, 2).toThreeGeo();
-				// var obj = new THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
-				// scene.add(obj);
-				// render();
+				var geometry = Geo.Shapes.Cylinder(0, 0, 0, 5, 8, 2).toThreeGeo();
+				var obj = new THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+				scene.add(obj);
+				render();
 
 			}
 

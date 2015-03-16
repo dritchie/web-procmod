@@ -5,6 +5,8 @@ var Geo = (function() {
 	// ------------------------------------------------------------------------
 
 	// Small, bare-bones geometry object
+	// No normals (since we can compute those after the fact when it's time to display)
+	// UVs are optional (i.e. can have empty this.uvs)
 	Geo.Geometry = function()
 	{
 		this.vertices = [];
@@ -63,10 +65,7 @@ var Geo = (function() {
 			for (var i = 0; i < other.uvs.length; i++)
 				this.uvs.push(other.uvs[i].clone());
 			for (var i = 0; i < other.indices.length; i++)
-			{
-				var oidx = other.indices[i];
-				this.indices.push({vertex: oidx.vertex + nverts, uv: oidx.uv + nuvs});
-			}
+				this.indices.push(other.indices[i] + nverts);
 		},
 
 		transform: function (mat)
@@ -79,17 +78,13 @@ var Geo = (function() {
 		mergeWithTransform: function (othergeo, mat)
 		{
 			var nverts = this.vertices.length;
-			var nnorms = this.normals.length;
 			var nuvs = this.uvs.length;
 			for (var i = 0; i < other.vertices.length; i++)
 				this.vertices.push(other.vertices[i].clone().applyMatrix4(mat));
 			for (var i = 0; i < other.uvs.length; i++)
 				this.uvs.push(other.uvs[i].clone());
 			for (var i = 0; i < other.indices.length; i++)
-			{
-				var oidx = other.indices[i];
-				this.indices.push({vertex: oidx.vertex + nverts, normal: oidx.normal + nnorms, uv: oidx.uv + nuvs});
-			}
+				this.indices.push(other.indices[i] + nverts);
 		},
 
 		toThreeGeo: function()
@@ -111,16 +106,14 @@ var Geo = (function() {
 				var i1 = this.indices[3*i + 1];
 				var i2 = this.indices[3*i + 2];
 				// Faces
-				var face = new THREE.Face3(
-					i0.vertex, i1.vertex, i2.vertex
-				)
+				var face = new THREE.Face3(i0, i1, i2);
 				threegeo.faces.push(face);
 				// UVs
 				if (this.uvs.length > 0)
 				{
-					threegeo.UVs[i0.vertex].copy(this.uvs[i0.uv]);
-					threegeo.UVs[i1.vertex].copy(this.uvs[i1.uv]);
-					threegeo.UVs[i2.vertex].copy(this.uvs[i2.uv]);
+					threegeo.faceVertexUVs[0][i0].copy(this.uvs[i0]);
+					threegeo.faceVertexUVs[0][i1].copy(this.uvs[i1]);
+					threegeo.faceVertexUVs[0][i2].copy(this.uvs[i2]);
 				}
 			}
 			threegeo.computeFaceNormals();
@@ -138,9 +131,9 @@ var Geo = (function() {
 			for (var i = 0; i < threegeo.faces.length; i++)
 			{
 				var f = threegeo.faces[i];
-				this.indices.push({vertex: f.a, uv: -1});
-				this.indices.push({vertex: f.b, uv: -1});
-				this.indices.push({vertex: f.c, uv: -1});
+				this.indices.push(f.a);
+				this.indices.push(f.b);
+				this.indices.push(f.c);
 			}
 		}
 	}
@@ -213,9 +206,9 @@ var Geo = (function() {
 			// TODO(?): Parallelize this loop using WebWorkers?
 			for (var i = 0; i < numtris; i++)
 			{
-				p0.copy(this.vertices[this.indices[3*i].vertex]);
-				p1.copy(this.vertices[this.indices[3*i + 1].vertex]);
-				p2.copy(this.vertices[this.indices[3*i + 2].vertex]);
+				p0.copy(this.vertices[this.indices[3*i]]);
+				p1.copy(this.vertices[this.indices[3*i + 1]]);
+				p2.copy(this.vertices[this.indices[3*i + 2]]);
 				p0.applyMatrix4(worldtovox);
 				p1.applyMatrix4(worldtovox);
 				p2.applyMatrix4(worldtovox);
@@ -270,9 +263,9 @@ var Geo = (function() {
 			var numOtherTris = othergeo.indices.length/3;
 			for (var j = 0; j < numThisTris; j++)
 			{
-				u0.copy(this.vertices[this.indices[3*j].vertex]);
-				u1.copy(this.vertices[this.indices[3*j + 1].vertex]);
-				u2.copy(this.vertices[this.indices[3*j + 2].vertex]);
+				u0.copy(this.vertices[this.indices[3*j]]);
+				u1.copy(this.vertices[this.indices[3*j + 1]]);
+				u2.copy(this.vertices[this.indices[3*j + 2]]);
 				contractTri(u0, u1, u2);
 				thistribbox.makeEmpty();
 				thistribbox.expandByPoint(u0); thistribbox.expandByPoint(u1); thistribbox.expandByPoint(u2);
@@ -280,9 +273,9 @@ var Geo = (function() {
 				{
 					for (var i = 0; i < numOtherTris; i++)
 					{
-						v0.copy(othergeo.vertices[othergeo.indices[3*i].vertex]);
-						v1.copy(othergeo.vertices[othergeo.indices[3*i + 1].vertex]);
-						v2.copy(othergeo.vertices[othergeo.indices[3*i + 2].vertex]);
+						v0.copy(othergeo.vertices[othergeo.indices[3*i]]);
+						v1.copy(othergeo.vertices[othergeo.indices[3*i + 1]]);
+						v2.copy(othergeo.vertices[othergeo.indices[3*i + 2]]);
 						contractTri(v0, v1, v2);
 						othertribbox.makeEmpty();
 						othertribbox.expandByPoint(u0); othertribbox.expandByPoint(u1); othertribbox.expandByPoint(u2);
@@ -307,12 +300,12 @@ var Geo = (function() {
 
 	function quad(geo, i0, i1, i2, i3)
 	{
-		geo.indices.push({vertex: i0, uv: -1});
-		geo.indices.push({vertex: i1, uv: -1});
-		geo.indices.push({vertex: i2, uv: -1});
-		geo.indices.push({vertex: i2, uv: -1});
-		geo.indices.push({vertex: i3, uv: -1});
-		geo.indices.push({vertex: i0, uv: -1});
+		geo.indices.push(i0);
+		geo.indices.push(i1);
+		geo.indices.push(i2);
+		geo.indices.push(i2);
+		geo.indices.push(i3);
+		geo.indices.push(i0);
 	}
 
 	Geo.Geometry.prototype.addBox = function(cx, cy, cz, lx, ly, lz)
@@ -345,7 +338,7 @@ var Geo = (function() {
 		quad(this, vi+2, vi+3, vi+7, vi+6);
 	}
 
-	function circleOfVertsAndNormals(geo, c, r, n)
+	function circleOfVerts(geo, c, r, n)
 	{
 		for (var i = 0; i < n; i++)
 		{
@@ -359,9 +352,9 @@ var Geo = (function() {
 	{
 		for (var i = 0; i < n; i++)
 		{
-			geo.indices.push({vertex: centeridx, uv: -1});
-			geo.indices.push({vertex: circbaseidx+i, uv: -1});
-			geo.indices.push({vertex: circbaseidx+(i+1)%n, uv: -1});
+			geo.indices.push(centeridx);
+			geo.indices.push(circbaseidx+i);
+			geo.indices.push(circbaseidx+(i+1)%n);
 		}
 	}
 
@@ -371,7 +364,7 @@ var Geo = (function() {
 		var topCenter = baseCenter.clone(); topCenter.y += height;
 		// Make perimeter vertices on the top and bottom
 		var nv = this.vertices.length;
-		circleOfVertsAndNormals(this, baseCenter, baseRadius, n);
+		circleOfVerts(this, baseCenter, baseRadius, n);
 		if (topRadius === undefined)
 		{
 			// If the two radii are the same, then we can just translate the bottom circle up.
@@ -384,19 +377,14 @@ var Geo = (function() {
 		else
 		{
 			// Otherwise, we need to generate the top circle from scratch.
-			circleOfVertsAndNormals(this, topCenter, topRadius, n);
+			circleOfVerts(this, topCenter, topRadius, n);
 		}
 		// Make the sides
 		var i0, i1, i2, i3;
 		for (var i = 0; i < n; i++)
 		{
 			i0 = i; i1 = (i+1)%n; i2 = n + (i+1)%n; i3 = n + i;
-			this.indices.push({vertex: nv+i0, uv: -1});
-			this.indices.push({vertex: nv+i1, uv: -1});
-			this.indices.push({vertex: nv+i2, uv: -1});
-			this.indices.push({vertex: nv+i2, uv: -1});
-			this.indices.push({vertex: nv+i3, uv: -1});
-			this.indices.push({vertex: nv+i0, uv: -1});
+			quad(this, i0, i1, i2, i3);
 		}
 		// Place center vertices, make the end caps
 		this.vertices.push(baseCenter);
