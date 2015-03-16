@@ -342,30 +342,43 @@ var Geo = (function() {
 	{
 		for (var i = 0; i < n; i++)
 		{
-			var ang = i*2*Math.PI;
+			var ang = (i/n)*2*Math.PI;
 			var v = new THREE.Vector3(r*Math.cos(ang)+c.x, c.y, r*Math.sin(ang)+c.z);
 			geo.vertices.push(v);
 		}
 	}
 
-	function disk(geo, centeridx, circbaseidx, n)
+	function disk(geo, centeridx, circbaseidx, n, reverse)
 	{
-		for (var i = 0; i < n; i++)
+		if (reverse)
 		{
-			geo.indices.push(centeridx);
-			geo.indices.push(circbaseidx+i);
-			geo.indices.push(circbaseidx+(i+1)%n);
+			for (var i = 0; i < n; i++)
+			{
+				geo.indices.push(centeridx);
+				geo.indices.push(circbaseidx+(i+1)%n);
+				geo.indices.push(circbaseidx+i);
+			}
+		}
+		else
+		{
+			for (var i = 0; i < n; i++)
+			{
+				geo.indices.push(centeridx);
+				geo.indices.push(circbaseidx+i);
+				geo.indices.push(circbaseidx+(i+1)%n);
+			}
 		}
 	}
 
 	Geo.Geometry.prototype.addCylinder = function(x, y, z, height, n, baseRadius, topRadius)
 	{
+		topRadius = topRadius || baseRadius
 		var baseCenter = new THREE.Vector3(x, y, z);
 		var topCenter = baseCenter.clone(); topCenter.y += height;
 		// Make perimeter vertices on the top and bottom
 		var nv = this.vertices.length;
 		circleOfVerts(this, baseCenter, baseRadius, n);
-		if (topRadius === undefined)
+		if (baseRadius === topRadius)
 		{
 			// If the two radii are the same, then we can just translate the bottom circle up.
 			for (var i = 0; i < n; i++)
@@ -383,14 +396,17 @@ var Geo = (function() {
 		var i0, i1, i2, i3;
 		for (var i = 0; i < n; i++)
 		{
-			i0 = i; i1 = (i+1)%n; i2 = n + (i+1)%n; i3 = n + i;
+			i0 = i;
+			i1 = n + i;
+			i2 = n + (i+1)%n;
+			i3 = (i+1)%n;
 			quad(this, i0, i1, i2, i3);
 		}
 		// Place center vertices, make the end caps
 		this.vertices.push(baseCenter);
-		disk(this, this.vertices.length-1, nv, n);
+		disk(this, this.vertices.length-1, nv, n, false);
 		this.vertices.push(topCenter);
-		disk(this, this.vertices.length, nv+n, n);
+		disk(this, this.vertices.length-1, nv+n, n, true);
 	}
 
 	// Make functional versions of all shape generators.
