@@ -12,21 +12,18 @@ var Intersection = (function(){
 		var center = new THREE.Vector3();
 		var extent = new THREE.Vector3();
 		var pnormabs = new THREE.Vector3();
-		return function(bmins, bmaxs, pdist, pnorm)
+		return function (bmins, bmaxs, pdist, pnorm)
 		{
 			center.copy(bmins).add(bmaxs).multiplyScalar(0.5);
 			extent.copy(bmaxs).sub(center);
 			var fOrigin = pnorm.dot(center);
-			pnormabs.copy(pnorm);
-			pnormabs.x = Math.abs(pnormabs.x);
-			pnormabs.y = Math.abs(pnormabs.y);
-			pnormabs.z = Math.abs(pnormabs.z);
+			pnormabs.set(Math.abs(pnorm.x), Math.abs(pnorm.y), Math.abs(pnorm.z))
 			var fMaxExtent = extent.dot(pnormabs);
-			var fmin = fOrigin - fMaxExtent
-			var fmax = fOrigin + fMaxExtent;
-			if (pdist > fmax + BOX_PLANE_EPSILON)
+			// var fmin = fOrigin - fMaxExtent;   // Deferred this computation to later
+			// var fmax = fOrigin + fMaxExtent;
+			if (pdist > (fOrigin + fMaxExtent) + BOX_PLANE_EPSILON)
 				return -1;
-			else if (pdist + BOX_PLANE_EPSILON >= fmin)
+			else if (pdist + BOX_PLANE_EPSILON >= (fOrigin - fMaxExtent))
 				return 1;
 			else
 				return 0;
@@ -77,7 +74,7 @@ var Intersection = (function(){
 		var v3 = new THREE.Vector3();
 		var diff = new THREE.Vector3();
 		var abs_diff = new THREE.Vector3();
-		return function(bmins, bmaxs, p0, p1, p2)
+		return function (bmins, bmaxs, p0, p1, p2)
 		{
 			pnorm.copy(p1mp0.copy(p1).sub(p0).cross(p2mp0.copy(p2).sub(p0))).normalize();
 			var pdist = pnorm.dot(p0);
@@ -264,7 +261,7 @@ var Intersection = (function(){
 		var x0x1 = new THREE.Vector2();
 		var def = new THREE.Vector3();
 		var y0y1 = new THREE.Vector2();
-		return function(v0, v1, v2, u0, u1, u2, coplanarCounts, fudgeFactor)
+		return function (v0, v1, v2, u0, u1, u2, coplanarCounts, fudgeFactor)
 		{
 			// Compute plane equation of triangle v0, v1, v2 (n1.x + d1 = 0)
 			e1.copy(v1).sub(v0);

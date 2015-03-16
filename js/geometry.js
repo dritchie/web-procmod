@@ -18,24 +18,6 @@ var Geo = (function() {
 
 		constructor: Geo.Geometry,
 
-		merge: function(other)
-		{
-			var nverts = this.vertices.length;
-			var nnorms = this.normals.length;
-			var nuvs = this.uvs.length;
-			for (var i = 0; i < other.vertices.length; i++)
-				this.vertices.push(other.vertices[i].clone());
-			for (var i = 0; i < other.normals.length; i++)
-				this.normals.push(other.normals[i].clone());
-			for (var i = 0; i < other.uvs.length; i++)
-				this.uvs.push(other.uvs[i].clone());
-			for (var i = 0; i < other.indices.length; i++)
-			{
-				var oidx = other.indices[i];
-				this.indices.push({vertex: oidx.vertex + nverts, normal: oidx.normal + nnorms, uv: oidx.uv + nuvs});
-			}
-		},
-
 		clone: function()
 		{
 			var ngeo = new Geo.Geometry();
@@ -72,6 +54,76 @@ var Geo = (function() {
 			this.bbox.setFromPoints(this.vertices);
 			return this.bbox;
 		},
+
+		merge: function(other)
+		{
+			var nverts = this.vertices.length;
+			var nnorms = this.normals.length;
+			var nuvs = this.uvs.length;
+			for (var i = 0; i < other.vertices.length; i++)
+				this.vertices.push(other.vertices[i].clone());
+			for (var i = 0; i < other.normals.length; i++)
+				this.normals.push(other.normals[i].clone());
+			for (var i = 0; i < other.uvs.length; i++)
+				this.uvs.push(other.uvs[i].clone());
+			for (var i = 0; i < other.indices.length; i++)
+			{
+				var oidx = other.indices[i];
+				this.indices.push({vertex: oidx.vertex + nverts, normal: oidx.normal + nnorms, uv: oidx.uv + nuvs});
+			}
+		},
+
+		transform: (function() {
+			var normalmat = new THREE.Matrix4();
+			return function (mat, isLengthPreserving)
+			{
+				var nv = this.vertices.length;
+				while(nv--)
+					this.vertices[nv].applyMatrix4(mat);
+				var nn = this.normals.length;
+				if (isLengthPreserving)
+				{
+					while(nn--)
+						this.normals[nn].transformDirection(mat);
+				}
+				else
+				{
+					normalmat.getInverse(mat).transpose();
+					while(nn--)
+						this.normals[nn].transformDirection(normalmat).normalize();
+				}
+			}
+		})(),
+
+		mergeWithTransform: (function() {
+			var normalmat = new THREE.Matrix4();
+			return function (othergeo, mat, isLengthPreserving)
+			{
+				var nverts = this.vertices.length;
+				var nnorms = this.normals.length;
+				var nuvs = this.uvs.length;
+				for (var i = 0; i < other.vertices.length; i++)
+					this.vertices.push(other.vertices[i].clone().applyMatrix4(mat));
+				if (isLengthPreserving)
+				{
+					for (var i = 0; i < other.normals.length; i++)
+						this.normals.push(other.normals[i].clone().transformDirection(mat));
+				}
+				else
+				{
+					normalmat.getInverse(mat).transpose();
+					for (var i = 0; i < other.normals.length; i++)
+						this.normals.push(other.normals[i].clone().transformDirection(normalmat).normalize());
+				}
+				for (var i = 0; i < other.uvs.length; i++)
+					this.uvs.push(other.uvs[i].clone());
+				for (var i = 0; i < other.indices.length; i++)
+				{
+					var oidx = other.indices[i];
+					this.indices.push({vertex: oidx.vertex + nverts, normal: oidx.normal + nnorms, uv: oidx.uv + nuvs});
+				}
+			}
+		})(),
 
 		toThreeGeo: function()
 		{
@@ -142,7 +194,7 @@ var Geo = (function() {
 	var voxelizeTriangle = (function() {
 		var vmin = new THREE.Vector3();
 		var vmax = new THREE.Vector3();
-		return function(outgrid, v0, v1, v2, tribb)
+		return function (outgrid, v0, v1, v2, tribb)
 		{
 			// If a triangle is perfectly axis-aligned, it will 'span' zero voxels, so the loops below
 			//    will do nothing. To get around this, we expand the bbox a little bit.
@@ -178,7 +230,7 @@ var Geo = (function() {
 		var p1 = new THREE.Vector3();
 		var p2 = new THREE.Vector3();
 		var tribb = new THREE.Box3();
-		return function(outgrid, bounds, dimsOrSize, solid)
+		return function (outgrid, bounds, dimsOrSize, solid)
 		{
 			var dims;
 			if (dimsOrSize instanceof THREE.Vector3)
@@ -230,7 +282,7 @@ var Geo = (function() {
 		var v0mc = new THREE.Vector3();
 		var v1mc = new THREE.Vector3();
 		var v2mc = new THREE.Vector3();
-		return function(v0, v1, v2)
+		return function (v0, v1, v2)
 		{
 			centroid.copy(v0).add(v1).add(v2).multiplyScalar(1/3);
 			v0.sub(v0mc.copy(v0).sub(centroid).multiplyScalar(CONTRACT_EPS));
@@ -249,7 +301,7 @@ var Geo = (function() {
 		var v2 = new THREE.Vector3();
 		var thistribbox = new THREE.Box3();
 		var othertribbox = new THREE.Box3();
-		return function(othergeo)
+		return function (othergeo)
 		{
 			// First, check that the overall bboxes intersect
 			if (!this.getbbox().isIntersectionBox(othergeo.getbbox()))
@@ -305,126 +357,133 @@ var Geo = (function() {
 		geo.indices.push({vertex: i0, normal: ni, uv: -1});
 	}
 
-	function box(geo, cx, cy, cz, lx, ly, lz)
+	Geo.Geometry.prototype.addBox = function(cx, cy, cz, lx, ly, lz)
 	{
 		var xh = lx*0.5;
 		var yh = ly*0.5;
 		var zh = lz*0.5;
-		var vi = geo.vertices.length;
+		var vi = this.vertices.length;
 
-		geo.vertices.push(new THREE.Vector3(cx - xh, cy - yh, cz - zh));
-		geo.vertices.push(new THREE.Vector3(cx - xh, cy - yh, cz + zh));
-		geo.vertices.push(new THREE.Vector3(cx - xh, cy + yh, cz - zh));
-		geo.vertices.push(new THREE.Vector3(cx - xh, cy + yh, cz + zh));
-		geo.vertices.push(new THREE.Vector3(cx + xh, cy - yh, cz - zh));
-		geo.vertices.push(new THREE.Vector3(cx + xh, cy - yh, cz + zh));
-		geo.vertices.push(new THREE.Vector3(cx + xh, cy + yh, cz - zh));
-		geo.vertices.push(new THREE.Vector3(cx + xh, cy + yh, cz + zh));
+		this.vertices.push(new THREE.Vector3(cx - xh, cy - yh, cz - zh));
+		this.vertices.push(new THREE.Vector3(cx - xh, cy - yh, cz + zh));
+		this.vertices.push(new THREE.Vector3(cx - xh, cy + yh, cz - zh));
+		this.vertices.push(new THREE.Vector3(cx - xh, cy + yh, cz + zh));
+		this.vertices.push(new THREE.Vector3(cx + xh, cy - yh, cz - zh));
+		this.vertices.push(new THREE.Vector3(cx + xh, cy - yh, cz + zh));
+		this.vertices.push(new THREE.Vector3(cx + xh, cy + yh, cz - zh));
+		this.vertices.push(new THREE.Vector3(cx + xh, cy + yh, cz + zh));
 
 		// Back
-		geo.normals.push(new THREE.Vector3(0, 0, -1));
-		quad(geo, vi+2, vi+6, vi+4, vi+0, geo.normals.length-1);
+		this.normals.push(new THREE.Vector3(0, 0, -1));
+		quad(this, vi+2, vi+6, vi+4, vi+0, this.normals.length-1);
 
 		// Front
-		geo.normals.push(new THREE.Vector3(0, 0, 1));
-		quad(geo, vi+1, vi+5, vi+7, vi+3, geo.normals.length-1);
+		this.normals.push(new THREE.Vector3(0, 0, 1));
+		quad(this, vi+1, vi+5, vi+7, vi+3, this.normals.length-1);
 
 		// Left
-		geo.normals.push(new THREE.Vector3(-1, 0, 0));
-		quad(geo, vi+0, vi+1, vi+3, vi+2, geo.normals.length-1);
+		this.normals.push(new THREE.Vector3(-1, 0, 0));
+		quad(this, vi+0, vi+1, vi+3, vi+2, this.normals.length-1);
 
 		// Right
-		geo.normals.push(new THREE.Vector3(1, 0, 0));
-		quad(geo, vi+6, vi+7, vi+5, vi+4, geo.normals.length-1);
+		this.normals.push(new THREE.Vector3(1, 0, 0));
+		quad(this, vi+6, vi+7, vi+5, vi+4, this.normals.length-1);
 
 		// Bottom
-		geo.normals.push(new THREE.Vector3(0, -1, 0));
-		quad(geo, vi+4, vi+5, vi+1, vi+0, geo.normals.length-1);
+		this.normals.push(new THREE.Vector3(0, -1, 0));
+		quad(this, vi+4, vi+5, vi+1, vi+0, this.normals.length-1);
 
 		// Top
-		geo.normals.push(new THREE.Vector3(0, 1, 0));
-		quad(geo, vi+2, vi+3, vi+7, vi+6, geo.normals.length-1);
+		this.normals.push(new THREE.Vector3(0, 1, 0));
+		quad(this, vi+2, vi+3, vi+7, vi+6, this.normals.length-1);
 	}
 
-	Geo.addBox = box,
-
-	Geo.box = function(cx, cy, cz, lx, ly, lz)
+	// TODO: These normals are technically wrong if the top and bottom radii are different...
+	function circleOfVertsAndNormals(geo, c, r, n)
 	{
-		var b = new Geo.Geometry();
-		box(b, cx, cy, cz, lx, ly, lz);
-		return b;
+		for (var i = 0; i < n; i++)
+		{
+			var ang = i*2*Math.PI;
+			var norm = new THREE.Vector3(Math.cos(ang), 0, Math.sin(ang))
+			geo.normals.push(norm);
+			var vert = norm.clone().multiplyScalar(r).add(c);
+			geo.vertices.push(vert);
+		}
 	}
 
-
-	// ------------------------------------------------------------------------
-
-	// Recursive chain definition of combined geometry
-	// Roughly like a Scheme list (where car == this.geo and cdr == this.next),
-	//    except that the 'empty list' is actually an object with both this.geo
-	//    and this.next == null.
-	Geo.GeometryChain = function(geo, next)
+	function disk(geo, centeridx, circbaseidx, normalidx, n)
 	{
-		this.geo = geo || null;
-		this.next = next || null;
-		this.boundingBox = null;
+		for (var i = 0; i < n; i++)
+		{
+			geo.indices.push({vertex: centeridx, normal: normalidx, uv: -1});
+			geo.indices.push({vertex: circbaseidx+i, normal: normalidx, uv: -1});
+			geo.indices.push({vertex: circbaseidx+(i+1)%n, normal: normalidx, uv: -1});
+		}
 	}
 
-	Geo.GeometryChain.create = function(geo, next) { return new Geo.GeometryChain(geo, next); }
-
-	Geo.GeometryChain.prototype = {
-
-		constructor: Geo.GeometryChain,
-
-		length: function()
+	Geo.Geometry.prototype.addCylinder = function(x, y, z, height, n, baseRadius, topRadius)
+	{
+		var baseCenter = new THREE.Vector3(x, y, z);
+		var topCenter = baseCenter.clone(); topCenter.y += height;
+		// Make perimeter vertices on the top and bottom
+		var nv = this.vertices.length;
+		var nn = this.normals.length;
+		circleOfVertsAndNormals(this, baseCenter, baseRadius, n);
+		if (topRadius === undefined)
 		{
-			var len = 0;
-			var currchain = this;
-			while (currchain.geo !== null)
+			// If the two radii are the same, then we can just translate the bottom circle up.
+			for (var i = 0; i < n; i++)
 			{
-				len = len + 1;
-				currchain = currchain.next;
-			}
-			return len;
-		},
-
-		combine: function(primgeo)
-		{
-			return new Geo.GeometryChain(primgeo, this);
-		},
-
-		computeBoundingBox: function()
-		{
-			// Only compute if we haven't already
-			// (Basically memoization, since this object is immutable)
-			if (this.boundingBox == null)
-			{
-				if (this.geo !== null)
-				{
-					this.boundingBox = this.geo.getbbox().clone();
-					this.next.computeBoundingBox();
-					if (this.next.boundingBox !== null)
-						this.boundingBox.union(this.next.boundingBox);
-				}
-			}
-		},
-
-		toPrimGeo: function()
-		{
-			if (this.geo == null)
-				return null;
-			else
-			{
-				var accumgeo = this.geo.clone();
-				var currchain = this.next;
-				while (currchain.geo !== null)
-				{
-					accumgeo.merge(currchain.geo);
-					currchain = currchain.next;
-				}
-				return accumgeo;
+				var topv = this.vertices[nv+i].clone(); topv.y += height;
+				this.vertices.push(topv);
 			}
 		}
-	};
+		else
+		{
+			// Otherwise, we need to generate the top circle from scratch.
+			circleOfVertsAndNormals(this, topCenter, topRadius, n);
+		}
+		// Make the sides
+		var i0, i1, i2, i3;
+		for (var i = 0; i < n; i++)
+		{
+			i0 = i; i1 = (i+1)%n; i2 = n + (i+1)%n; i3 = n + i;
+			this.indices.push({vertex: nv+i0, normal: nn+i0, uv: -1});
+			this.indices.push({vertex: nv+i1, normal: nn+i1, uv: -1});
+			this.indices.push({vertex: nv+i2, normal: nn+i2, uv: -1});
+			this.indices.push({vertex: nv+i2, normal: nn+i2, uv: -1});
+			this.indices.push({vertex: nv+i3, normal: nn+i3, uv: -1});
+			this.indices.push({vertex: nv+i0, normal: nn+i0, uv: -1});
+		}
+		// Place center vertices, make the end caps
+		this.vertices.push(baseCenter);
+		this.normals.push(new THREE.Vector3(0, -1, 0));
+		disk(this, this.vertices.length-1, nv, this.normals.length-1, n);
+		this.vertices.push(topCenter);
+		this.normals.push(new THREE.Vector3(0, 1, 0));
+		disk(this, this.vertices.length, nv+n, this.normals.length-1, n);
+	}
+
+	// Make functional versions of all shape generators.
+	Geo.Shapes = {};
+	function makeFunctional(fn)
+	{
+		return function()
+		{
+			var g = new Geo.Geometry();
+			fn.apply(g, arguments);
+			return g;
+		}
+	}
+	for (var fnname in Geo.Geometry.prototype)
+	{
+		if (fnname.startsWith("add"))
+		{
+			var fn = Geo.Geometry.prototype[fnname];
+			var purename = fnname.replace("add", "");
+			Geo.Shapes[purename] = makeFunctional(fn);
+		}
+	}
 
 	// ------------------------------------------------------------------------
 

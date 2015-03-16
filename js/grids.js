@@ -219,7 +219,7 @@ var Grids = (function(){
 		var visited = new Grids.BinaryGrid3();
 		var frontier = new Grids.BinaryGrid3();
 		var fringe = null;
-		return function(bounds)
+		return function (bounds)
 		{
 			visited.copy(this);		// Already-filled cells count as visited.
 			frontier.resize(this.dims);
@@ -279,7 +279,7 @@ var Grids = (function(){
 		var visited = new Grids.BinaryGrid3();
 		var frontier = new Grids.BinaryGrid3();
 		var fringe = null;
-		return function(bounds)
+		return function (bounds)
 		{
 			visited.copy(this);		// Already-filled cells count as visited.
 			frontier.resize(this.dims);
@@ -357,6 +357,8 @@ var Grids = (function(){
 
 										v.x++;
 									}
+									// Again, bail early if we hit the edge of the bounds
+									if (v.x == bounds.max.x) { isoutside = true; break; }
 								}
 							}
 							// Once we've grown this region to completion, check whether it is
