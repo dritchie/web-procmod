@@ -236,16 +236,20 @@ var Grids = (function(){
 							while (fringe.length > 0)
 							{
 								var v = fringe.pop();
-								frontier.set(v.x, v.y, v.z);
 								// If we expanded to the edge of the bounds, then this
-								//    region is outside.
+								//    region is outside. We don't care about it, so we
+								//    can bail early
 								if (v.x == bounds.min.x || v.x == bounds.max.x-1 ||
 									v.y == bounds.min.y || v.y == bounds.max.y-1 ||
 									v.z == bounds.min.z || v.z == bounds.max.z-1)
+								{
 									isoutside = true;
+									break;
+								}
 								// Otherwise, expand to the neighbors
 								else
 								{
+									frontier.set(v.x, v.y, v.z);
 									visited.set(v.x, v.y, v.z);
 									if (!visited.isset(v.x-1, v.y, v.z))
 										fringe.push(voxel(v.x-1, v.y, v.z));
@@ -259,6 +263,100 @@ var Grids = (function(){
 										fringe.push(voxel(v.x, v.y, v.z-1));
 									if (!visited.isset(v.x, v.y, v.z+1))
 										fringe.push(voxel(v.x, v.y, v.z+1));
+								}
+							}
+							// Once we've grown this region to completion, check whether it is
+							//    inside or outside. If inside, add it to this.
+							if (!isoutside) this.unionInPlace(frontier);
+						}
+		}
+	})();
+
+	// Flood-fill using a faster, scanline-based algorithm.
+	// Parts of this are adapated from http://lodev.org/cgtutor/floodfill.html
+	Grids.BinaryGrid3.prototype.fillInteriorScanline = (function() {
+		function voxel(x, y, z) { return {x: x, y: y, z: z}; }
+		var visited = new Grids.BinaryGrid3();
+		var frontier = new Grids.BinaryGrid3();
+		var fringe = null;
+		return function(bounds)
+		{
+			visited.copy(this);		// Already-filled cells count as visited.
+			frontier.resize(this.dims);
+			// Start expanding from every cell we haven't yet visisted.
+			for (var z = bounds.min.z; z < bounds.max.z; z++)
+				for (var y = bounds.min.y; y < bounds.max.y; y++)
+					for (var x = bounds.min.x; x < bounds.max.x; x++)
+						if (!visited.isset(x, y, z))
+						{
+							frontier.clearall();
+							var isoutside = false;
+							fringe = [];
+							fringe.push(voxel(x,y,z));
+							while (fringe.length > 0)
+							{
+								var v = fringe.pop();
+								// If we expanded to the edge of the bounds, then this
+								//    region is outside. We don't care about it, so we
+								//    can bail early
+								if (v.x == bounds.min.x || v.x == bounds.max.x-1 ||
+									v.y == bounds.min.y || v.y == bounds.max.y-1 ||
+									v.z == bounds.min.z || v.z == bounds.max.z-1)
+								{
+									isoutside = true;
+									break;
+								}
+								// Otherwise, fill one line and expand to the neighbors
+								else
+								{
+									// Move to the 'beginning' of the line
+									while (v.x >= bounds.min.x && !visited.isset(v.x, v.y, v.z)) v.x--;
+									v.x++;
+									// Again, bail early if we hit the edge of the bounds
+									if (v.x == bounds.min.x) { isoutside = true; break; }
+									var spandown = false;
+									var spanup = false;
+									var spanback = false;
+									var spanfront = false;
+									while (v.x < bounds.max.x && !visited.isset(v.x, v.y, v.z))
+									{
+										frontier.set(v.x, v.y, v.z);
+										visited.set(v.x, v.y, v.z);
+										// Down neigbor
+										if (!spandown && !visited.isset(v.x, v.y-1, v.z))
+										{
+											fringe.push(voxel(v.x, v.y-1, v.z));
+											spandown = true;
+										}
+										else if (spandown && visited.isset(v.x, v.y-1, v.z))
+											spandown = false;
+										// Up neigbor
+										if (!spanup && !visited.isset(v.x, v.y+1, v.z))
+										{
+											fringe.push(voxel(v.x, v.y+1, v.z));
+											spanup = true;
+										}
+										else if (spanup && visited.isset(v.x, v.y+1, v.z))
+											spanup = false;
+										// Back neigbor
+										if (!spanback && !visited.isset(v.x, v.y, v.z-1))
+										{
+											fringe.push(voxel(v.x, v.y, v.z-1));
+											spanback = true;
+										}
+										else if (spanback && visited.isset(v.x, v.y, v.z-1))
+											spanback = false;
+										// Front neigbor
+										if (!spanfront && !visited.isset(v.x, v.y, v.z+1))
+										{
+											fringe.push(voxel(v.x, v.y, v.z+1));
+											spanfront = true;
+										}
+										else if (spanfront && visited.isset(v.x, v.y, v.z+1))
+											spanfront = false;
+
+										v.x++;
+									}
 								}
 							}
 							// Once we've grown this region to completion, check whether it is

@@ -217,7 +217,8 @@ var Geo = (function() {
 					touchedbb.union(tribb);
 				}
 			}
-			if (solid) outgrid.fillInterior(touchedbb);
+			// if (solid) outgrid.fillInterior(touchedbb);
+			if (solid) outgrid.fillInteriorScanline(touchedbb);
 		}
 	})();
 

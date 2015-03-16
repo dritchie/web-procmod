@@ -25,7 +25,7 @@
 			</textarea>
 		</div> -->
 		<script>
-			var scene, camera, renderer, controls, gui, settings;
+			var scene, camera, renderer, materials, controls, gui, settings;
 			var compiledCode, topK, _trampoline;
 			var model = null;
 			var voxparams =
@@ -85,11 +85,6 @@
 					}
 					var geometry = bestsamp.getCompleteGeometry().toThreeGeo();
 
-					var materials = [
-						new THREE.MeshLambertMaterial({ color: new THREE.Color(.9, .9, .9).getHex(), shading: THREE.FlatShading, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }),
-						new THREE.MeshBasicMaterial({ color: 0x000000, shading: THREE.FlatShading, wireframe: true, wireframeLinewidth: 2, transparent: true })
-					];
-
 					if (model !== null)
 						scene.remove(model);
 					model = new THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
@@ -120,6 +115,11 @@
 				dirlight.position.set(-1, 1, 1);
 				scene.add(amblight);
 				scene.add(dirlight);
+
+				materials = [
+					new THREE.MeshLambertMaterial({ color: new THREE.Color(.9, .9, .9).getHex(), shading: THREE.FlatShading, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }),
+					new THREE.MeshBasicMaterial({ color: 0x000000, shading: THREE.FlatShading, wireframe: true, wireframeLinewidth: 2, transparent: true })
+				];
 
 				controls = new THREE.OrbitControls( camera );
 				controls.damping = 0.2;
@@ -161,6 +161,7 @@
 
 					$.get("programs/spaceship_vox.wppl", webppl_compile);
 				});
+
 			}
 
 			init();
