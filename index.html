@@ -28,6 +28,7 @@
 			var scene, camera, renderer, materials, controls, gui, settings;
 			var compiledCode, topK, _trampoline;
 			var model = null;
+			var targetmodel = null;
 			var voxparams =
 			{
 				// percentSameSigma: 0.02,
@@ -89,8 +90,7 @@
 					}
 					var geometry = bestsamp.getCompleteGeometry().toThreeGeo();
 
-					if (model !== null)
-						scene.remove(model);
+					scene.remove(scene.children[scene.children.length-1]);
 					model = new THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
 					scene.add(model);
 
@@ -99,6 +99,24 @@
 				t0 = performance.now();
 				// TODO: Get rid of repeated call to eval by pre-evaluating code and storing it in a function somehow?
 				eval(compiledCode);
+			}
+
+			function toggle_target()
+			{
+				if (settings.showTarget)
+				{
+					scene.remove(scene.children[scene.children.length-1]);
+					scene.add(targetmodel);
+				}
+				else
+				{
+					scene.remove(scene.children[scene.children.length-1]);
+					if (model !== null)
+						scene.add(model);
+					else
+						scene.add(new THREE.Object3D());
+				}
+				render();
 			}
 
 			function init()
@@ -120,6 +138,10 @@
 				scene.add(amblight);
 				scene.add(dirlight);
 
+				// Add dummy object to the Scene, to maintain the invariant that the last child is always
+				//    the object being displayed.
+				scene.add(new THREE.Object3D());
+
 				materials = [
 					new THREE.MeshLambertMaterial({ color: new THREE.Color(.9, .9, .9).getHex(), shading: THREE.FlatShading, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }),
 					new THREE.MeshBasicMaterial({ color: 0x000000, shading: THREE.FlatShading, wireframe: true, wireframeLinewidth: 2, transparent: true })
@@ -132,8 +154,10 @@
 				gui = new dat.GUI();
 				settings = 
 				{
+					showTarget: false,
 					regenerate: webppl_generate
 				}
+				gui.add(settings, "showTarget").name("show target").onChange(toggle_target);
 				gui.add(settings, "regenerate");
 
 				window.addEventListener( 'resize', onWindowResize, false );
@@ -153,8 +177,10 @@
 				{
 					// Returns an Object3D which has one Mesh as a child.
 					// The mesh's geometry is a BufferGeometry.
+					var bufgeo = object.children[0].geometry;
+					targetmodel = new THREE.SceneUtils.createMultiMaterialObject(bufgeo, materials);
 					var geom = new THREE.Geometry();
-					geom.fromBufferGeometry(object.children[0].geometry);
+					geom.fromBufferGeometry(bufgeo);
 					var mygeom = new Geo.Geometry();
 					mygeom.fromThreeGeo(geom);
 					voxparams.bounds = mygeom.getbbox().clone();
@@ -165,14 +191,6 @@
 
 					$.get("programs/spaceship.wppl", webppl_compile);
 				});
-
-				// var geometry = Geo.Shapes.Cylinder(0, 0, 0, 4, 10, 2, 1);
-				// var mat = new THREE.Matrix4();
-				// mat.makeRotationX(Math.PI/2);
-				// geometry.transform(mat);
-				// var obj = new THREE.SceneUtils.createMultiMaterialObject(geometry.toThreeGeo(), materials);
-				// scene.add(obj);
-				// render();
 
 			}
 

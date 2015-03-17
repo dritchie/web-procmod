@@ -316,8 +316,8 @@ var WingGuns = function(xbase, ybase, zbase, length)
 
 // return generate();
 
-// var N = 10
-var N = 2000
+var N = 100
+// var N = 2000
 return MH(generate, N, false, true);
 
 
