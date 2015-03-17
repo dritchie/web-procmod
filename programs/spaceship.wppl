@@ -33,7 +33,7 @@ var addBody = function(state, i, rearz, prev)
 	else
 	{	
 		var addnose = flip(0.75);
-		// TODO: Also have a box nose
+		// TODO: Also have a box nose, like the old version?
 		return addnose ?
 			addGeometry(newstate3, genCylinderBodySeg(rearz+zlen, {type: bodyType, xlen: xlen, ylen: ylen}, true).geo)
 			:
@@ -43,7 +43,7 @@ var addBody = function(state, i, rearz, prev)
 
 var wi = function(i, w) { return Math.exp(-w*i); }
 
-var BodyType = { Box: 0, Cylinder: 1, N: 2 }
+var BodyType = { Box: 0, Cylinder: 1, Cluster: 2, N: 3 }
 var genBodySeg = function(rearz, prev)
 {	
 	var type = randomInteger(BodyType.N);
@@ -51,6 +51,8 @@ var genBodySeg = function(rearz, prev)
 		return genBoxBodySeg(rearz, prev)
 	else if (type == BodyType.Cylinder)
 		return genCylinderBodySeg(rearz, prev);
+	else if (type == BodyType.Cluster)
+		return genClusterBodySeg(rearz, prev);
 }
 
 var genBoxBodySeg = function(rearz, prev)
@@ -81,6 +83,20 @@ var genCylinderBodySeg = function(rearz, prev, isnose)
 	return { xlen: xlen, ylen: ylen, zlen: zlen, type: BodyType.Cylinder, geo: geo };
 }
 
+var genClusterBodySeg = function(rearz, prev, isnose)
+{
+	// Must be smaller than previous segment, if that was a box
+	var limitrad = 0.25*Math.min(prev.xlen, prev.ylen);
+	var minrad = (prev.type === BodyType.Box) ? 0.4*limitrad : 0.5*0.3;
+	var maxrad = (prev.type === BodyType.Box) ? limitrad : 0.5*1.25;
+	var radius = uniformrel(minrad, maxrad);
+	var xlen = radius*4;
+	var ylen = radius*4;
+	var zlen = uniformrel(2, 5);
+	var geo = BodyCluster(rearz, zlen, radius);
+	return { xlen: xlen, ylen: ylen, zlen: zlen, type: BodyType.Cluster, geo: geo };
+}
+
 var addWings = function(state, i, xbase, zlo, zhi)
 {
 	var rets = genWingSeg(xbase, zlo, zhi);
@@ -101,7 +117,7 @@ var genWingSeg = function(xbase, zlo, zhi)
 	var xlen = uniformrel(0.25, 2.0);
 	var ylen = uniformrel(0.25, 1.25);
 	var zlen = uniformrel(0.5, 4.0);
-	var winggeo = Wings(xbase, zbase, xlen, ylen, zlen);
+	var winggeo = WingBoxes(xbase, zbase, xlen, ylen, zlen);
 	return { xlen: xlen, ylen: ylen, zlen: zlen, zbase: zbase, winggeo: winggeo }
 }
 
@@ -144,16 +160,7 @@ var addGeometry = function(state, geo)
 
 // Geometric primitives specific to this program
 
-// var Nose = (function() {
-// 	var m = Object.create(THREE.Matrix4);
-// 	THREE.Matrix4.call(m);
-// 	return function (x, y, z, xlen, ylen, zlen)
-// 	{
-
-// 	}
-// })();
-
-var Wings = function(xbase, zbase, xlen, ylen, zlen)
+var WingBoxes = function(xbase, zbase, xlen, ylen, zlen)
 {
 	var wings = Geo.Shapes.Box(xbase+0.5*xlen, 0, zbase, xlen, ylen, zlen);
 	wings.addBox(-(xbase+0.5*xlen), 0, zbase, xlen, ylen, zlen);
@@ -177,6 +184,37 @@ var BodyCylinder = function(zbase, length, baseRadius, tipRadius)
 	var cyl = Geo.Shapes.Cylinder(0, 0, 0, length, N_CYLINDER, baseRadius, tipRadius);
 	cyl.transform(m1);
 	return cyl;
+}
+
+var m3 = Object.create(THREE.Matrix4.prototype);
+THREE.Matrix4.call(m3);
+var m4 = Object.create(THREE.Matrix4.prototype);
+THREE.Matrix4.call(m4);
+var BodyCluster = function(zbase, length, radius)
+{
+	var cyl = Geo.Shapes.Cylinder(0, 0, 0, length, N_CYLINDER, radius);
+	var geo = Object.create(Geo.Geometry.prototype);
+	Geo.Geometry.call(geo);
+	m1.makeTranslation(0, 0, 0.5*length+zbase);
+	m2.makeTranslation(0, -0.5*length, 0);
+	m1.multiply(mrot).multiply(m2);
+	// 1
+	m3.makeTranslation(-radius, 0, -radius);
+	m4.copy(m1).multiply(m3);
+	geo.mergeWithTransform(cyl, m4);
+	// 2
+	m3.makeTranslation(-radius, 0, radius);
+	m4.copy(m1).multiply(m3);
+	geo.mergeWithTransform(cyl, m4);
+	// 3
+	m3.makeTranslation(radius, 0, -radius);
+	m4.copy(m1).multiply(m3);
+	geo.mergeWithTransform(cyl, m4);
+	// 4
+	m3.makeTranslation(radius, 0, radius);
+	m4.copy(m1).multiply(m3);
+	geo.mergeWithTransform(cyl, m4);
+	return geo;
 }
 
 

@@ -75,7 +75,7 @@ var Geo = (function() {
 				this.vertices[nv].applyMatrix4(mat);
 		},
 
-		mergeWithTransform: function (othergeo, mat)
+		mergeWithTransform: function (other, mat)
 		{
 			var nverts = this.vertices.length;
 			var nuvs = this.uvs.length;
