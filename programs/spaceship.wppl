@@ -1,6 +1,4 @@
 
-// Assume availability of globals 'targetGrid' and 'voxparams'
-
 var generate = function()
 {
 	return addBody(newState(), 0, -5, {type: null, xlen: 0, ylen: 0});
@@ -28,14 +26,15 @@ var addBody = function(state, i, rearz, prev)
 						:
 						newstate2;
 	// Continue generating?
+	var nextprev = {type: bodyType, xlen: xlen, ylen: ylen};
 	if (flip(wi(i, 0.4)))
-		return addBody(newstate3, i+1, rearz+zlen, {type: bodyType, xlen: xlen, ylen: ylen});
+		return addBody(newstate3, i+1, rearz+zlen, nextprev);
 	else
 	{	
 		var addnose = flip(0.75);
 		// TODO: Also have a box nose, like the old version?
 		return addnose ?
-			addGeometry(newstate3, genCylinderBodySeg(rearz+zlen, {type: bodyType, xlen: xlen, ylen: ylen}, true).geo)
+			addGeometry(newstate3, genCylinderBodySeg(rearz+zlen, nextprev, true).geo)
 			:
 			newstate3;
 	}
@@ -104,21 +103,42 @@ var addWings = function(state, i, xbase, zlo, zhi)
 	var ylen = rets.ylen;	
 	var zlen = rets.zlen;
 	var zbase = rets.zbase;
-	var newstate = addGeometry(state, rets.winggeo);
+	var newstate = addGeometry(state, rets.geo);
 	if (flip(wi(i, 0.6)))
 		return addWings(newstate, i+1, xbase+xlen, zbase-0.5*zlen, zbase+0.5*zlen);
 	else
 		return newstate;
 }
 
+var WingType = { Box: 0, Cylinder: 1, N: 2 }
 var genWingSeg = function(xbase, zlo, zhi)
+{
+	var type = randomInteger(WingType.N);
+	if (type == WingType.Box)
+		return genBoxWingSeg(xbase, zlo, zhi);
+	else if (type == WingType.Cylinder)
+		return genCylinderWingSeg(xbase, zlo, zhi);
+}
+
+var genBoxWingSeg = function(xbase, zlo, zhi)
 {
 	var zbase = uniformrel(zlo, zhi);
 	var xlen = uniformrel(0.25, 2.0);
 	var ylen = uniformrel(0.25, 1.25);
 	var zlen = uniformrel(0.5, 4.0);
-	var winggeo = WingBoxes(xbase, zbase, xlen, ylen, zlen);
-	return { xlen: xlen, ylen: ylen, zlen: zlen, zbase: zbase, winggeo: winggeo }
+	var geo = WingBoxes(xbase, zbase, xlen, ylen, zlen);
+	return { xlen: xlen, ylen: ylen, zlen: zlen, zbase: zbase, geo: geo }
+}
+
+var genCylinderWingSeg = function(xbase, zlo, zhi)
+{
+	var zbase = uniformrel(zlo, zhi);
+	var radius = uniform(.15, .7);
+	var xlen = 2*radius;
+	var ylen = 2*radius;
+	var zlen = uniformrel(1, 5);
+	var geo = WingCylinders(xbase, zbase, zlen, radius);
+	return { xlen: xlen, ylen: ylen, zlen: zlen, zbase: zbase, geo: geo }
 }
 
 var addFin = function(state, i, ybase, zlo, zhi, xmax)
@@ -127,13 +147,14 @@ var addFin = function(state, i, ybase, zlo, zhi, xmax)
 	var ylen = uniformrel(0.1, 0.5);
 	var zlen = uniformrel(0.5, 1.0) * (zhi - zlo);
 	var zbase = 0.5*(zlo + zhi);
-	var fingeo = Geo.Shapes.Box(0, ybase + 0.5*ylen, zbase, xlen, ylen, zlen);
-	var newstate = addGeometry(state, fingeo);
+	var geo = Geo.Shapes.Box(0, ybase + 0.5*ylen, zbase, xlen, ylen, zlen);
+	var newstate = addGeometry(state, geo);
 	if (flip(wi(i, 0.2)))
 		return addFin(newstate, i+1, ybase+ylen, zbase-0.5*zlen, zbase+0.5*zlen, xlen);
 	else
 		return newstate;
 }
+
 
 var uniformrel = function(lo, hi)
 {
@@ -145,6 +166,7 @@ var uniformrel = function(lo, hi)
 // Generating / adding to model states
 var newState = function()
 {
+	// Assume availability of global 'voxparams'
 	return ModelStates.VoxelizingModelState.create(voxparams);
 }
 var addGeometry = function(state, geo)
@@ -159,13 +181,6 @@ var addGeometry = function(state, geo)
 
 
 // Geometric primitives specific to this program
-
-var WingBoxes = function(xbase, zbase, xlen, ylen, zlen)
-{
-	var wings = Geo.Shapes.Box(xbase+0.5*xlen, 0, zbase, xlen, ylen, zlen);
-	wings.addBox(-(xbase+0.5*xlen), 0, zbase, xlen, ylen, zlen);
-	return wings;
-}
 
 var N_CYLINDER = 8;
 
@@ -214,6 +229,27 @@ var BodyCluster = function(zbase, length, radius)
 	m3.makeTranslation(radius, 0, radius);
 	m4.copy(m1).multiply(m3);
 	geo.mergeWithTransform(cyl, m4);
+	return geo;
+}
+
+var WingBoxes = function(xbase, zbase, xlen, ylen, zlen)
+{
+	var wings = Geo.Shapes.Box(xbase+0.5*xlen, 0, zbase, xlen, ylen, zlen);
+	wings.addBox(-(xbase+0.5*xlen), 0, zbase, xlen, ylen, zlen);
+	return wings;
+}
+
+var WingCylinders = function(xbase, zbase, length, radius)
+{
+	var cyl = Geo.Shapes.Cylinder(0, 0, 0, length, N_CYLINDER, radius);
+	var geo = Object.create(Geo.Geometry.prototype);
+	Geo.Geometry.call(geo);
+	m1.makeTranslation(0, -.5*length, 0);
+	m2.copy(mrot).multiply(m1);
+	m3.makeTranslation(-xbase - radius, 0, zbase).multiply(m2);
+	geo.mergeWithTransform(cyl, m3);
+	m3.makeTranslation(xbase + radius, 0, zbase).multiply(m2);
+	geo.mergeWithTransform(cyl, m3);
 	return geo;
 }
 
