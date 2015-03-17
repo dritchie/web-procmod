@@ -162,8 +162,11 @@
 					$.get("programs/spaceship.wppl", webppl_compile);
 				});
 
-				// var geometry = Geo.Shapes.Cylinder(0, 0, 0, 5, 4, 2, 1).toThreeGeo();
-				// var obj = new THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
+				// var geometry = Geo.Shapes.Cylinder(0, 0, 0, 4, 10, 2, 1);
+				// var mat = new THREE.Matrix4();
+				// mat.makeRotationX(Math.PI/2);
+				// geometry.transform(mat);
+				// var obj = new THREE.SceneUtils.createMultiMaterialObject(geometry.toThreeGeo(), materials);
 				// scene.add(obj);
 				// render();
 

@@ -3,17 +3,18 @@
 
 var generate = function()
 {
-	return addBody(newState(), 0, -5);
+	return addBody(newState(), 0, -5, {type: null, xlen: 0, ylen: 0});
 }
 
-var addBody = function(state, i, rearz)
+var addBody = function(state, i, rearz, prev)
 {
 	// Gen new body segment
-	var rets = genBodySeg(rearz);
+	var rets = genBodySeg(rearz, prev);
 	var xlen = rets.xlen;
 	var ylen = rets.ylen;
 	var zlen = rets.zlen;
-	var newstate1 = addGeometry(state, rets.bodygeo);
+	var bodyType = rets.type;
+	var newstate1 = addGeometry(state, rets.geo);
 	var wingprob = wi(i+1, 0.5);
 	// Gen wings?
 	var newstate2 = flip(wingprob) ?
@@ -28,20 +29,48 @@ var addBody = function(state, i, rearz)
 						newstate2;
 	// Continue generating?
 	if (flip(wi(i, 0.4)))
-		return addBody(newstate3, i+1, rearz+zlen);
+		return addBody(newstate3, i+1, rearz+zlen, {type: bodyType, xlen: xlen, ylen: ylen});
 	else
 		return newstate3;
 }
 
 var wi = function(i, w) { return Math.exp(-w*i); }
 
-var genBodySeg = function(rearz)
+var BodyType = { Box: 0, Cylinder: 1, N: 2 }
+var genBodySeg = function(rearz, prev)
+{	
+	var type = randomInteger(BodyType.N);
+	if (type == BodyType.Box)
+		return genBoxBodySeg(rearz, prev)
+	else if (type == BodyType.Cylinder)
+		return genCylinderBodySeg(rearz, prev);
+}
+
+var genBoxBodySeg = function(rearz, prev)
 {
-	var xlen = uniformrel(1, 3);
-	var ylen = uniformrel(.5, 1) * xlen;
+	// Must be bigger than the previous segment, if the previous
+	//   segment was not a box (i.e. was a cylinder-type thing)
+	var xl = uniformrel(1, 3);
+	var yl = uniformrel(.5, 1) * xl;
+	var xlen = (prev.type === BodyType.Box) ? xl : Math.max(xl, prev.xlen);
+	var ylen = (prev.type === BodyType.Box) ? yl : Math.max(yl, prev.ylen);
 	var zlen = uniformrel(2, 5);
-	var bodygeo = Geo.Shapes.Box(0, 0, rearz + 0.5*zlen, xlen, ylen, zlen);
-	return { xlen: xlen, ylen: ylen, zlen: zlen, bodygeo: bodygeo };
+	var geo = Geo.Shapes.Box(0, 0, rearz + 0.5*zlen, xlen, ylen, zlen);
+	return { xlen: xlen, ylen: ylen, zlen: zlen, type: BodyType.Box, geo: geo };
+}
+
+var genCylinderBodySeg = function(rearz, prev)
+{
+	// Must be smaller than previous segment, if that was a box
+	var limitrad = 0.5*Math.min(prev.xlen, prev.ylen);
+	var minrad = (prev.type === BodyType.Box) ? 0.4*limitrad : 0.3;
+	var maxrad = (prev.type === BodyType.Box) ? limitrad : 1.25;
+	var radius = uniformrel(minrad, maxrad);
+	var xlen = radius*2;
+	var ylen = radius*2;
+	var zlen = uniformrel(2, 5);
+	var geo = BodyCylinder(rearz, radius, zlen);
+	return { xlen: xlen, ylen: ylen, zlen: zlen, type: BodyType.Cylinder, geo: geo };
 }
 
 var addWings = function(state, i, xbase, zlo, zhi)
@@ -64,10 +93,8 @@ var genWingSeg = function(xbase, zlo, zhi)
 	var xlen = uniformrel(0.25, 2.0);
 	var ylen = uniformrel(0.25, 1.25);
 	var zlen = uniformrel(0.5, 4.0);
-	var winggeo1 = Geo.Shapes.Box(xbase+0.5*xlen, 0, zbase, xlen, ylen, zlen);
-	var winggeo2 = Geo.Shapes.Box(-(xbase + 0.5*xlen), 0, zbase, xlen, ylen, zlen);
-	winggeo1.merge(winggeo2);
-	return { xlen: xlen, ylen: ylen, zlen: zlen, zbase: zbase, winggeo: winggeo1 }
+	var winggeo = Wings(xbase, zbase, xlen, ylen, zlen);
+	return { xlen: xlen, ylen: ylen, zlen: zlen, zbase: zbase, winggeo: winggeo }
 }
 
 var addFin = function(state, i, ybase, zlo, zhi, xmax)
@@ -91,6 +118,7 @@ var uniformrel = function(lo, hi)
 }
 
 
+// Generating / adding to model states
 var newState = function()
 {
 	return ModelStates.VoxelizingModelState.create(voxparams);
@@ -104,6 +132,45 @@ var addGeometry = function(state, geo)
 		factor(newstate.score - state.score);
 	return newstate;
 }
+
+
+// Geometric primitives specific to this program
+
+// var Nose = (function() {
+// 	var m = Object.create(THREE.Matrix4);
+// 	THREE.Matrix4.call(m);
+// 	return function (x, y, z, xlen, ylen, zlen)
+// 	{
+
+// 	}
+// })();
+
+var Wings = function(xbase, zbase, xlen, ylen, zlen)
+{
+	var wings = Geo.Shapes.Box(xbase+0.5*xlen, 0, zbase, xlen, ylen, zlen);
+	wings.addBox(-(xbase+0.5*xlen), 0, zbase, xlen, ylen, zlen);
+	return wings;
+}
+
+var N_CYLINDER = 8;
+
+var mrot = Object.create(THREE.Matrix4.prototype);
+THREE.Matrix4.apply(mrot);
+mrot.makeRotationX(Math.PI/2);
+var m1 = Object.create(THREE.Matrix4.prototype);
+THREE.Matrix4.call(m1);
+var m2 = Object.create(THREE.Matrix4.prototype);
+THREE.Matrix4.call(m2);
+var BodyCylinder = function(zbase, radius, length)
+{
+	m1.makeTranslation(0, 0, 0.5*length+zbase);
+	m2.makeTranslation(0, -0.5*length, 0);
+	m1.multiply(mrot).multiply(m2);
+	var cyl = Geo.Shapes.Cylinder(0, 0, 0, length, N_CYLINDER, radius);
+	cyl.transform(m1);
+	return cyl;
+}
+
 
 // return generate();
 
