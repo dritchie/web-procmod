@@ -133,7 +133,18 @@ var addBoxWingSeg = function(state, xbase, zlo, zhi)
 	var zlen = uniformrel(0.5, 4.0);
 	var geo = WingBoxes(xbase, zbase, xlen, ylen, zlen);
 	var newstate = addGeometry(state, geo);
-	return { xlen: xlen, ylen: ylen, zlen: zlen, zbase: zbase, state: newstate }
+	var newstate2 = flip(0.5) ? addWingGuns(newstate, xbase, zbase, xlen, ylen, zlen)
+							  : newstate;
+	return { xlen: xlen, ylen: ylen, zlen: zlen, zbase: zbase, state: newstate2 }
+}
+
+var addWingGuns = function(state, xbase, zbase, xlen, ylen, zlen)
+{
+	var gunlen = uniformrel(1, 1.2)*zlen;
+	var gunxbase = xbase + 0.5*xlen;
+	var gunybase = 0.5*ylen;
+	var geo = WingGuns(gunxbase, gunybase, zbase, gunlen);
+	return addGeometry(state, geo);
 }
 
 var addCylinderWingSeg = function(state, xbase, zlo, zhi)
@@ -296,6 +307,7 @@ var WingGuns = function(xbase, ybase, zbase, length)
 	// 4
 	m3.makeTranslation(xbase, ybase+gunRadius, zbase).multiply(m2);
 	geo.mergeWithTransform(gunproto, m3);
+	return geo;
 }
 
 

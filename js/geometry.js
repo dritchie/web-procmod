@@ -400,7 +400,7 @@ var Geo = (function() {
 			i1 = n + i;
 			i2 = n + (i+1)%n;
 			i3 = (i+1)%n;
-			quad(this, i0, i1, i2, i3);
+			quad(this, nv+i0, nv+i1, nv+i2, nv+i3);
 		}
 		// Place center vertices, make the end caps
 		this.vertices.push(baseCenter);
