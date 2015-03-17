@@ -60,12 +60,14 @@ var ModelStates = (function()
 					newstate.score = -Infinity;
 				else
 				{
-					var percentSame = this.voxparams.targetGrid.percentCellsEqualPadded(newstate.grid);
-					var targetExtent = voxparams.bounds.size();
-					var extralo = voxparams.bounds.min.clone().sub(newstate.bbox.min).clampScalar(0, Infinity).divide(targetExtent);
-					var extrahi = newstate.bbox.max.clone().sub(voxparams.bounds.max).clampScalar(0, Infinity).divide(targetExtent);
+					var vp = this.voxparams;
+					var percentSame = vp.targetGrid.percentCellsEqualPadded(newstate.grid);
+					var targetExtent = vp.bounds.size();
+					var extralo = vp.bounds.min.clone().sub(newstate.bbox.min).clampScalar(0, Infinity).divide(targetExtent);
+					var extrahi = newstate.bbox.max.clone().sub(vp.bounds.max).clampScalar(0, Infinity).divide(targetExtent);
 					var percentOutside = extralo.x + extralo.y + extralo.z + extrahi.x + extrahi.y + extrahi.z;
-					newstate.score = gaussianERP.score([1, 0.02], percentSame) + gaussianERP.score([0, 0.02], percentOutside);
+					newstate.score = gaussianERP.score([1, vp.percentSameSigma], percentSame) +
+									 gaussianERP.score([0, vp.percentOutsideSigma], percentOutside);
 				}
 			}
 			return newstate;
