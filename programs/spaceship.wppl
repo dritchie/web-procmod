@@ -31,7 +31,14 @@ var addBody = function(state, i, rearz, prev)
 	if (flip(wi(i, 0.4)))
 		return addBody(newstate3, i+1, rearz+zlen, {type: bodyType, xlen: xlen, ylen: ylen});
 	else
-		return newstate3;
+	{	
+		var addnose = flip(0.75);
+		// TODO: Also have a box nose
+		return addnose ?
+			addGeometry(newstate3, genCylinderBodySeg(rearz+zlen, {type: bodyType, xlen: xlen, ylen: ylen}, true).geo)
+			:
+			newstate3;
+	}
 }
 
 var wi = function(i, w) { return Math.exp(-w*i); }
@@ -59,7 +66,7 @@ var genBoxBodySeg = function(rearz, prev)
 	return { xlen: xlen, ylen: ylen, zlen: zlen, type: BodyType.Box, geo: geo };
 }
 
-var genCylinderBodySeg = function(rearz, prev)
+var genCylinderBodySeg = function(rearz, prev, isnose)
 {
 	// Must be smaller than previous segment, if that was a box
 	var limitrad = 0.5*Math.min(prev.xlen, prev.ylen);
@@ -68,8 +75,9 @@ var genCylinderBodySeg = function(rearz, prev)
 	var radius = uniformrel(minrad, maxrad);
 	var xlen = radius*2;
 	var ylen = radius*2;
-	var zlen = uniformrel(2, 5);
-	var geo = BodyCylinder(rearz, radius, zlen);
+	var zlen = isnose ? uniformrel(1, 3) : uniformrel(2, 5);
+	var geo = isnose ? BodyCylinder(rearz, zlen, radius, radius*uniformrel(.25, .75))
+					 : BodyCylinder(rearz, zlen, radius);
 	return { xlen: xlen, ylen: ylen, zlen: zlen, type: BodyType.Cylinder, geo: geo };
 }
 
@@ -161,12 +169,12 @@ var m1 = Object.create(THREE.Matrix4.prototype);
 THREE.Matrix4.call(m1);
 var m2 = Object.create(THREE.Matrix4.prototype);
 THREE.Matrix4.call(m2);
-var BodyCylinder = function(zbase, radius, length)
+var BodyCylinder = function(zbase, length, baseRadius, tipRadius)
 {
 	m1.makeTranslation(0, 0, 0.5*length+zbase);
 	m2.makeTranslation(0, -0.5*length, 0);
 	m1.multiply(mrot).multiply(m2);
-	var cyl = Geo.Shapes.Cylinder(0, 0, 0, length, N_CYLINDER, radius);
+	var cyl = Geo.Shapes.Cylinder(0, 0, 0, length, N_CYLINDER, baseRadius, tipRadius);
 	cyl.transform(m1);
 	return cyl;
 }
