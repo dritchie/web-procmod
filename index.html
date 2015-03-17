@@ -62,6 +62,7 @@
 			function webppl_compile(code)
 			{
 				compiledCode = webppl.compile("(function(){" + code + "})()");
+				console.log("Code compiled");
 				webppl_generate();
 			}
 
@@ -88,6 +89,13 @@
 							bestsamp = entry.val;
 						} 
 					}
+					// var cg = bestsamp.getCompleteGeometry();
+					// if (cg.selfIntersects())
+					// {
+					// 	var isectgeo = cg.selfIntersectionGeo();
+					// 	targetmodel = new THREE.SceneUtils.createMultiMaterialObject(isectgeo.toThreeGeo(), materials);
+					// 	console.log("SELF-INTERSECTS");
+					// }
 					var geometry = bestsamp.getCompleteGeometry().toThreeGeo();
 
 					scene.remove(scene.children[scene.children.length-1]);
@@ -191,6 +199,19 @@
 
 					$.get("programs/spaceship.wppl", webppl_compile);
 				});
+
+				// var box = Geo.Shapes.Box(0, 0, 0, 4, 4, 2);
+				// var cyl = Geo.Shapes.Cylinder(0, 0, 0, 2, 8, 1, 1);
+				// var m = new THREE.Matrix4();
+				// m.makeRotationX(Math.PI/2);
+				// cyl.transform(m);
+				// m.makeTranslation(0, 0, 1);
+				// cyl.transform(m);
+				// console.log(box.intersects(cyl));
+				// cyl.merge(box);
+				// var obj = new THREE.SceneUtils.createMultiMaterialObject(cyl.toThreeGeo(), materials);
+				// scene.add(obj);
+				// render();
 
 			}
 

@@ -29,13 +29,16 @@ var ModelStates = (function()
 		return ms;
 	}
 
-	ModelStates.VoxelizingModelState.extend = function(geo, next)
+	ModelStates.VoxelizingModelState.extend = function(geo, next, doupdate)
 	{
 		var ms = new ModelStates.VoxelizingModelState(next.voxparams);
 		ms.geometry = geo;
-		ms.grid = next.grid.clone();
-		geo.voxelize(ms.grid, ms.voxparams.bounds, ms.grid.dims, true);
-		ms.bbox = geo.getbbox().clone().union(next.bbox);
+		if (doupdate)
+		{
+			ms.grid = next.grid.clone();
+			geo.voxelize(ms.grid, ms.voxparams.bounds, ms.grid.dims, true);
+			ms.bbox = geo.getbbox().clone().union(next.bbox);
+		}
 		ms.next = next;
 		ms.length = 1 + next.length;
 		return ms;
@@ -47,28 +50,28 @@ var ModelStates = (function()
 
 		addGeometry: function(geo)
 		{
-			var newstate = this;
+			var newstate;
 			// We don't even bother updating the state if the score is already -Infinity.
 			// (This is sort of like bailing out early: the program runs to completion, but
 			//   it doesn't do any of the really expensive stuff).
-			if (this.score > -Infinity)
+			// If adding this new geometry results in a self-intersection, then
+			//    the score immediately drops to log(0).
+			if (this.score === -Infinity || this.intersects(geo))
 			{
-				newstate = ModelStates.VoxelizingModelState.extend(geo, this);
-				// If adding this new geometry results in a self-intersection, then
-				//    the score immediately drops to log(0).
-				if (this.intersects(geo))
-					newstate.score = -Infinity;
-				else
-				{
-					var vp = this.voxparams;
-					var percentSame = vp.targetGrid.percentCellsEqualPadded(newstate.grid);
-					var targetExtent = vp.bounds.size();
-					var extralo = vp.bounds.min.clone().sub(newstate.bbox.min).clampScalar(0, Infinity).divide(targetExtent);
-					var extrahi = newstate.bbox.max.clone().sub(vp.bounds.max).clampScalar(0, Infinity).divide(targetExtent);
-					var percentOutside = extralo.x + extralo.y + extralo.z + extrahi.x + extrahi.y + extrahi.z;
-					newstate.score = gaussianERP.score([1, vp.percentSameSigma], percentSame) +
-									 gaussianERP.score([0, vp.percentOutsideSigma], percentOutside);
-				}
+				newstate = ModelStates.VoxelizingModelState.extend(geo, this, false);
+				newstate.score = -Infinity;
+			}
+			else
+			{
+				newstate = ModelStates.VoxelizingModelState.extend(geo, this, true);
+				var vp = this.voxparams;
+				var percentSame = vp.targetGrid.percentCellsEqualPadded(newstate.grid);
+				var targetExtent = vp.bounds.size();
+				var extralo = vp.bounds.min.clone().sub(newstate.bbox.min).clampScalar(0, Infinity).divide(targetExtent);
+				var extrahi = newstate.bbox.max.clone().sub(vp.bounds.max).clampScalar(0, Infinity).divide(targetExtent);
+				var percentOutside = extralo.x + extralo.y + extralo.z + extrahi.x + extrahi.y + extrahi.z;
+				newstate.score = gaussianERP.score([1, vp.percentSameSigma], percentSame) +
+								 gaussianERP.score([0, vp.percentOutsideSigma], percentOutside);
 			}
 			return newstate;
 		},

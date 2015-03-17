@@ -227,29 +227,8 @@ var Geo = (function() {
 
 	// Intersection testing
 
-	var contractTri = (function() {
-		var CONTRACT_EPS = 1e-10;
-		var centroid = new THREE.Vector3();
-		var v0mc = new THREE.Vector3();
-		var v1mc = new THREE.Vector3();
-		var v2mc = new THREE.Vector3();
-		return function (v0, v1, v2)
-		{
-			centroid.copy(v0).add(v1).add(v2).multiplyScalar(1/3);
-			v0.sub(v0mc.copy(v0).sub(centroid).multiplyScalar(CONTRACT_EPS));
-			v1.sub(v1mc.copy(v1).sub(centroid).multiplyScalar(CONTRACT_EPS));
-			v2.sub(v1mc.copy(v1).sub(centroid).multiplyScalar(CONTRACT_EPS));
-		}
-	})();
-
 	Geo.Geometry.prototype.intersects = (function() {
-		var FUDGE_FACTOR = 1e-10;
-		var u0 = new THREE.Vector3();
-		var u1 = new THREE.Vector3();
-		var u2 = new THREE.Vector3();
-		var v0 = new THREE.Vector3();
-		var v1 = new THREE.Vector3();
-		var v2 = new THREE.Vector3();
+		var FUDGE_FACTOR = 1e-2;
 		var thistribbox = new THREE.Box3();
 		var othertribbox = new THREE.Box3();
 		return function (othergeo)
@@ -263,20 +242,18 @@ var Geo = (function() {
 			var numOtherTris = othergeo.indices.length/3;
 			for (var j = 0; j < numThisTris; j++)
 			{
-				u0.copy(this.vertices[this.indices[3*j]]);
-				u1.copy(this.vertices[this.indices[3*j + 1]]);
-				u2.copy(this.vertices[this.indices[3*j + 2]]);
-				contractTri(u0, u1, u2);
+				var u0 = this.vertices[this.indices[3*j]];
+				var u1 = this.vertices[this.indices[3*j + 1]];
+				var u2 = this.vertices[this.indices[3*j + 2]];
 				thistribbox.makeEmpty();
 				thistribbox.expandByPoint(u0); thistribbox.expandByPoint(u1); thistribbox.expandByPoint(u2);
 				if (thistribbox.isIntersectionBox(othergeo.getbbox()))
 				{
 					for (var i = 0; i < numOtherTris; i++)
 					{
-						v0.copy(othergeo.vertices[othergeo.indices[3*i]]);
-						v1.copy(othergeo.vertices[othergeo.indices[3*i + 1]]);
-						v2.copy(othergeo.vertices[othergeo.indices[3*i + 2]]);
-						contractTri(v0, v1, v2);
+						var v0 = othergeo.vertices[othergeo.indices[3*i]];
+						var v1 = othergeo.vertices[othergeo.indices[3*i + 1]];
+						var v2 = othergeo.vertices[othergeo.indices[3*i + 2]];
 						othertribbox.makeEmpty();
 						othertribbox.expandByPoint(u0); othertribbox.expandByPoint(u1); othertribbox.expandByPoint(u2);
 						if (thistribbox.isIntersectionBox(othertribbox))
@@ -289,9 +266,67 @@ var Geo = (function() {
 		}
 	})();
 
+	// Find all the triangles involved in intersections between this and other.
+	Geo.Geometry.prototype.intersectionGeo = (function() {
+		var FUDGE_FACTOR = 1e-3;
+		var thistribbox = new THREE.Box3();
+		var othertribbox = new THREE.Box3();
+		return function (othergeo)
+		{
+			var isectgeo = new Geo.Geometry();
+			// First, check that the overall bboxes intersect
+			if (!this.getbbox().isIntersectionBox(othergeo.getbbox()))
+				return isectgeo;
+			// Check every triangle against every other triangle
+			// (Check bboxes first, natch)
+			var numThisTris = this.indices.length/3;
+			var numOtherTris = othergeo.indices.length/3;
+			for (var j = 0; j < numThisTris; j++)
+			{
+				var u0 = this.vertices[this.indices[3*j]];
+				var u1 = this.vertices[this.indices[3*j + 1]];
+				var u2 = this.vertices[this.indices[3*j + 2]];
+				thistribbox.makeEmpty();
+				thistribbox.expandByPoint(u0); thistribbox.expandByPoint(u1); thistribbox.expandByPoint(u2);
+				if (thistribbox.isIntersectionBox(othergeo.getbbox()))
+				{
+					for (var i = 0; i < numOtherTris; i++)
+					{
+						var v0 = othergeo.vertices[othergeo.indices[3*i]];
+						var v1 = othergeo.vertices[othergeo.indices[3*i + 1]];
+						var v2 = othergeo.vertices[othergeo.indices[3*i + 2]];
+						othertribbox.makeEmpty();
+						othertribbox.expandByPoint(u0); othertribbox.expandByPoint(u1); othertribbox.expandByPoint(u2);
+						if (thistribbox.isIntersectionBox(othertribbox))
+							if (Intersection.intersectTriangleTriangle(u0, u1, u2, v0, v1, v2, false, FUDGE_FACTOR))
+							{
+								// Add both triangles to isectgeo (unless this === othergeo
+								//    in which case we just add one).
+								var nv = isectgeo.vertices.length;
+								isectgeo.vertices.push(u0.clone()); isectgeo.vertices.push(u1.clone()); isectgeo.vertices.push(u2.clone());
+								isectgeo.indices.push(nv); isectgeo.indices.push(nv+1); isectgeo.indices.push(nv+2);
+								if (this !== othergeo)
+								{
+									nv = isectgeo.vertices.length;
+									isectgeo.vertices.push(v0.clone()); isectgeo.vertices.push(v1.clone()); isectgeo.vertices.push(v2.clone());
+									isectgeo.indices.push(nv); isectgeo.indices.push(nv+1); isectgeo.indices.push(nv+2);
+								}
+							}
+					}
+				}
+			}
+			return isectgeo;
+		}
+	})();
+
 	Geo.Geometry.prototype.selfIntersects = function()
 	{
 		return this.intersects(this);
+	}
+
+	Geo.Geometry.prototype.selfIntersectionGeo = function()
+	{
+		return this.intersectionGeo(this);
 	}
 
 	// ------------------------------------------------------------------------

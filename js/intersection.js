@@ -337,27 +337,27 @@ var Intersection = (function(){
 			xx = x0*x1;
 			yy = y0*y1;
 			xxyy = xx*yy;
-			var isec1x, isec1y, isect2x, isect2y;
+			var isect10, isect11, isect20, isect21;
 			tmp = a*xxyy;
-			isect1x = tmp + b*x1*yy;
-			isect1y = tmp + c*x0*yy;
+			isect10 = tmp + b*x1*yy;
+			isect11 = tmp + c*x0*yy;
 			tmp = d*xxyy;
-			isect2x = tmp + e*xx*y1;
-			isect2y = tmp + f*xx*y0;
+			isect20 = tmp + e*xx*y1;
+			isect21 = tmp + f*xx*y0;
 			// Sort isects
-			if (isect1x > isect1y)
+			if (isect10 > isect11)
 			{
-				var tmp = isect1x;
-				isect1x = isect1y;
-				isect1y = tmp;
+				var tmp = isect10;
+				isect10 = isect11;
+				isect11 = tmp;
 			}
-			if (isect2x > isect2y)
+			if (isect20 > isect21)
 			{
-				var tmp = isect2x;
-				isect2x = isect2y;
-				isect2y = tmp;
+				var tmp = isect20;
+				isect20 = isect21;
+				isect21 = tmp;
 			}
-			if ((isect1y <= isect2x + fudgeFactor) || (isect2y <= isect1x + fudgeFactor)) return false;
+			if ((isect11 <= isect20 + fudgeFactor) || (isect21 <= isect10 + fudgeFactor)) return false;
 			return true;
 		}
 	})();
