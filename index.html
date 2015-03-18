@@ -95,8 +95,10 @@
 							maxscore = entry.prob;
 							bestidx = i;
 						}
-						minscore = Math.min(entry.prob, minscore);
+						if (entry.prob > -Infinity)
+							minscore = Math.min(entry.prob, minscore);
 					}
+					if (minscore === Infinity) minscore = -Infinity;
 
 					if (gui_score !== null)
 						gui.remove(gui_score);
