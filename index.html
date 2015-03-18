@@ -25,10 +25,14 @@
 			</textarea>
 		</div> -->
 		<script>
-			var scene, camera, renderer, materials, controls, gui, settings;
+			var scene, camera, renderer, materials, controls;
 			var compiledCode, topK, _trampoline;
+			var guistate, gui;
+			var gui_sample = null, gui_score = null;
 			var model = null;
 			var targetmodel = null;
+			var samps = null;
+			var sampmodels = null;
 			var voxparams =
 			{
 				// percentSameSigma: 0.02,
@@ -62,7 +66,7 @@
 			function webppl_compile(code)
 			{
 				compiledCode = webppl.compile("(function(){" + code + "})()");
-				console.log("Code compiled");
+				console.log("Code compiled.");
 				webppl_generate();
 			}
 
@@ -76,42 +80,63 @@
 					var t1 = performance.now();
 					console.log("Time: ", (t1-t0)/1000.0);
 
-					var samps = erp.samples;
+					samps = erp.samples;
+					sampmodels = [];
+					for (var i = 0; i < samps.length; i++) sampmodels.push(null);
 
-					var bestsamp = null;
-					var bestscore = -Infinity;
+					var bestidx = 0;
+					var maxscore = -Infinity;
+					var minscore = Infinity;
 					for (var i = 0; i < samps.length; i++)
 					{
 						var entry = samps[i];
-						if (entry.prob > bestscore)
+						if (entry.prob > maxscore)
 						{
-							bestscore = entry.prob;
-							bestsamp = entry.val;
-						} 
+							maxscore = entry.prob;
+							bestidx = i;
+						}
+						minscore = Math.min(entry.prob, minscore);
 					}
-					// var cg = bestsamp.getCompleteGeometry();
-					// if (cg.selfIntersects())
-					// {
-					// 	var isectgeo = cg.selfIntersectionGeo();
-					// 	targetmodel = new THREE.SceneUtils.createMultiMaterialObject(isectgeo.toThreeGeo(), materials);
-					// 	console.log("SELF-INTERSECTS");
-					// }
-					var geometry = bestsamp.getCompleteGeometry().toThreeGeo();
 
-					scene.remove(scene.children[scene.children.length-1]);
-					model = new THREE.SceneUtils.createMultiMaterialObject(geometry, materials);
-					scene.add(model);
-
-					render();
+					if (gui_score !== null)
+						gui.remove(gui_score);
+					if (gui_sample !== null)
+						gui.remove(gui_sample);
+					guistate.score = maxscore;
+					guistate.sampleIndex = bestidx;
+					gui_score = gui.add(guistate, "score", minscore, maxscore);
+					gui_sample = gui.add(guistate, "sampleIndex", 0, samps.length-1).step(1).name("sample #");
+					gui_sample.onChange(select_sample);
+					gui_sample.setValue(bestidx);   // Will invoke select_sample
+					gui_sample.updateDisplay();
 				}
 				t0 = performance.now();
-				// TODO: Get rid of repeated call to eval by pre-evaluating code and storing it in a function somehow?
 				eval(compiledCode);
+			}
+
+			function select_sample(i)
+			{
+				if (samps.length > 0)
+				{
+					var samp = samps[i];
+					// Compute and cache THREE.Model objects for each sample
+					if (sampmodels[i] === null)
+					{
+						var geo = samps[i].val.getCompleteGeometry().toThreeGeo();
+						sampmodels[i] = new THREE.SceneUtils.createMultiMaterialObject(geo, materials);
+					}
+					scene.remove(scene.children[scene.children.length-1]);
+					model = sampmodels[i];
+					scene.add(model);
+					gui_score.setValue(samps[i].prob);
+					gui_score.updateDisplay();
+					render();
+				}
 			}
 
 			function toggle_target()
 			{
-				if (settings.showTarget)
+				if (guistate.showTarget)
 				{
 					scene.remove(scene.children[scene.children.length-1]);
 					scene.add(targetmodel);
@@ -160,13 +185,15 @@
 				controls.addEventListener( 'change', render );
 
 				gui = new dat.GUI();
-				settings = 
+				guistate = 
 				{
+					generate: webppl_generate,
 					showTarget: false,
-					regenerate: webppl_generate
+					score: 0,
+					sampleIndex: 0
 				}
-				gui.add(settings, "showTarget").name("show target").onChange(toggle_target);
-				gui.add(settings, "regenerate");
+				gui.add(guistate, "generate");
+				gui.add(guistate, "showTarget").name("show target").onChange(toggle_target);
 
 				window.addEventListener( 'resize', onWindowResize, false );
 				animate();
