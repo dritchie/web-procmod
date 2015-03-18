@@ -135,7 +135,6 @@ var addBoxWingSeg = function(state, xbase, zlo, zhi)
 	var newstate = addGeometry(state, geo);
 	var newstate2 = flip(0.5) ? addWingGuns(newstate, xbase, zbase, xlen, ylen, zlen)
 							  : newstate;
-	var newstate2 = newstate;
 	return { xlen: xlen, ylen: ylen, zlen: zlen, zbase: zbase, state: newstate2 }
 }
 
@@ -315,9 +314,7 @@ var WingGuns = function(xbase, ybase, zbase, length)
 // ----------------------------------------------------------------------------
 
 
-// return generate();
-
-// var N = 10
+// var N = 1
 var N = 1000
 return MH(generate, N, false, true);
 
