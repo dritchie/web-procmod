@@ -3,60 +3,54 @@
 
 var generate = function()
 {
-	return addBody(newState(), 0, -5, {type: null, xlen: 0, ylen: 0});
+	globalStore.modelState = newState();
+	addBody(0, -5, {type: null, xlen: 0, ylen: 0});
+	return globalStore.modelState;
 }
 
-var addBody = function(state, i, rearz, prev)
+var addBody = function(i, rearz, prev)
 {
 	// Gen new body segment
-	var rets = addBodySeg(state, rearz, prev);
+	var rets = addBodySeg(rearz, prev);
 	var xlen = rets.xlen;
 	var ylen = rets.ylen;
 	var zlen = rets.zlen;
 	var bodyType = rets.type;
-	var newstate1 = rets.state;
-	var wingprob = wi(i+1, 0.5);
 	// Gen wings?
-	var newstate2 = flip(wingprob) ?
-						addWings(newstate1, 0, 0.5*xlen, rearz+0.5, rearz+zlen-0.5)
-						:
-						newstate1;
+	var wingprob = wi(i+1, 0.5);
+	if (flip(wingprob))
+		addWings(0, 0.5*xlen, rearz+0.5, rearz+zlen-0.5);
 	// Gen fin?
 	var finprob = 0.7;
-	var newstate3 = flip(finprob) ?
-						addFin(newstate2, 0, 0.5*ylen, rearz, rearz+zlen, 0.6*xlen)
-						:
-						newstate2;
+	if (flip(finprob))
+		addFin(0, 0.5*ylen, rearz, rearz+zlen, 0.6*xlen);
 	// Continue generating?
 	var nextprev = {type: bodyType, xlen: xlen, ylen: ylen};
 	if (flip(wi(i, 0.4)))
-		return addBody(newstate3, i+1, rearz+zlen, nextprev);
+		addBody(i+1, rearz+zlen, nextprev);
 	else
 	{	
-		var addnose = flip(0.75);
 		// TODO: Also have a box nose, like the old version?
-		return addnose ?
-			addCylinderBodySeg(newstate3, rearz+zlen, nextprev, true).state
-			:
-			newstate3;
+		if (flip(0.75))
+			addCylinderBodySeg(rearz+zlen, nextprev, true);
 	}
 }
 
 var wi = function(i, w) { return Math.exp(-w*i); }
 
 var BodyType = { Box: 0, Cylinder: 1, Cluster: 2, N: 3 }
-var addBodySeg = function(state, rearz, prev)
+var addBodySeg = function(rearz, prev)
 {	
 	var type = randomInteger(BodyType.N);
 	if (type == BodyType.Box)
-		return addBoxBodySeg(state, rearz, prev)
+		return addBoxBodySeg(rearz, prev)
 	else if (type == BodyType.Cylinder)
-		return addCylinderBodySeg(state, rearz, prev);
+		return addCylinderBodySeg(rearz, prev);
 	else if (type == BodyType.Cluster)
-		return addClusterBodySeg(state, rearz, prev);
+		return addClusterBodySeg(rearz, prev);
 }
 
-var addBoxBodySeg = function(state, rearz, prev)
+var addBoxBodySeg = function(rearz, prev)
 {
 	// Must be bigger than the previous segment, if the previous
 	//   segment was not a box (i.e. was a cylinder-type thing)
@@ -66,11 +60,11 @@ var addBoxBodySeg = function(state, rearz, prev)
 	var ylen = (prev.type === BodyType.Box) ? yl : Math.max(yl, prev.ylen);
 	var zlen = uniformrel(2, 5);
 	var geo = Geo.Shapes.Box(0, 0, rearz + 0.5*zlen, xlen, ylen, zlen);
-	var newstate = addGeometry(state, geo);
-	return { xlen: xlen, ylen: ylen, zlen: zlen, type: BodyType.Box, state: newstate };
+	addGeometry(geo);
+	return { xlen: xlen, ylen: ylen, zlen: zlen, type: BodyType.Box };
 }
 
-var addCylinderBodySeg = function(state, rearz, prev, isnose)
+var addCylinderBodySeg = function(rearz, prev, isnose)
 {
 	// Must be smaller than previous segment, if that was a box
 	var limitrad = 0.5*Math.min(prev.xlen, prev.ylen);
@@ -82,11 +76,11 @@ var addCylinderBodySeg = function(state, rearz, prev, isnose)
 	var zlen = isnose ? uniformrel(1, 3) : uniformrel(2, 5);
 	var geo = isnose ? BodyCylinder(rearz, zlen, radius, radius*uniformrel(.25, .75))
 					 : BodyCylinder(rearz, zlen, radius);
-	var newstate = addGeometry(state, geo);
-	return { xlen: xlen, ylen: ylen, zlen: zlen, type: BodyType.Cylinder, state: newstate };
+	addGeometry(geo);
+	return { xlen: xlen, ylen: ylen, zlen: zlen, type: BodyType.Cylinder };
 }
 
-var addClusterBodySeg = function(state, rearz, prev, isnose)
+var addClusterBodySeg = function(rearz, prev, isnose)
 {
 	// Must be smaller than previous segment, if that was a box
 	var limitrad = 0.25*Math.min(prev.xlen, prev.ylen);
@@ -97,57 +91,54 @@ var addClusterBodySeg = function(state, rearz, prev, isnose)
 	var ylen = radius*4;
 	var zlen = uniformrel(2, 5);
 	var geo = BodyCluster(rearz, zlen, radius);
-	var newstate = addGeometry(state, geo);
-	return { xlen: xlen, ylen: ylen, zlen: zlen, type: BodyType.Cluster, state: newstate };
+	addGeometry(geo);
+	return { xlen: xlen, ylen: ylen, zlen: zlen, type: BodyType.Cluster };
 }
 
-var addWings = function(state, i, xbase, zlo, zhi)
+var addWings = function(i, xbase, zlo, zhi)
 {
-	var rets = addWingSeg(state, xbase, zlo, zhi);
+	var rets = addWingSeg(xbase, zlo, zhi);
 	var xlen = rets.xlen;
 	var ylen = rets.ylen;	
 	var zlen = rets.zlen;
 	var zbase = rets.zbase;
-	var newstate = rets.state;
 	if (flip(wi(i, 0.6)))
-		return addWings(newstate, i+1, xbase+xlen, zbase-0.5*zlen, zbase+0.5*zlen);
-	else
-		return newstate;
+		addWings(i+1, xbase+xlen, zbase-0.5*zlen, zbase+0.5*zlen);
 }
 
 var WingType = { Box: 0, Cylinder: 1, N: 2 }
-var addWingSeg = function(state, xbase, zlo, zhi)
+var addWingSeg = function(xbase, zlo, zhi)
 {
 	var type = randomInteger(WingType.N);
 	if (type == WingType.Box)
-		return addBoxWingSeg(state, xbase, zlo, zhi);
+		return addBoxWingSeg(xbase, zlo, zhi);
 	else if (type == WingType.Cylinder)
-		return addCylinderWingSeg(state, xbase, zlo, zhi);
+		return addCylinderWingSeg(xbase, zlo, zhi);
 }
 
-var addBoxWingSeg = function(state, xbase, zlo, zhi)
+var addBoxWingSeg = function(xbase, zlo, zhi)
 {
 	var zbase = uniformrel(zlo, zhi);
 	var xlen = uniformrel(0.25, 2.0);
 	var ylen = uniformrel(0.25, 1.25);
 	var zlen = uniformrel(0.5, 4.0);
 	var geo = WingBoxes(xbase, zbase, xlen, ylen, zlen);
-	var newstate = addGeometry(state, geo);
-	var newstate2 = flip(0.5) ? addWingGuns(newstate, xbase, zbase, xlen, ylen, zlen)
-							  : newstate;
-	return { xlen: xlen, ylen: ylen, zlen: zlen, zbase: zbase, state: newstate2 }
+	addGeometry(geo);
+	if (flip(0.5))
+		addWingGuns(xbase, zbase, xlen, ylen, zlen);
+	return { xlen: xlen, ylen: ylen, zlen: zlen, zbase: zbase };
 }
 
-var addWingGuns = function(state, xbase, zbase, xlen, ylen, zlen)
+var addWingGuns = function(xbase, zbase, xlen, ylen, zlen)
 {
 	var gunlen = uniformrel(1, 1.2)*zlen;
 	var gunxbase = xbase + 0.5*xlen;
 	var gunybase = 0.5*ylen;
 	var geo = WingGuns(gunxbase, gunybase, zbase, gunlen);
-	return addGeometry(state, geo);
+	addGeometry(geo);
 }
 
-var addCylinderWingSeg = function(state, xbase, zlo, zhi)
+var addCylinderWingSeg = function(xbase, zlo, zhi)
 {
 	var zbase = uniformrel(zlo, zhi);
 	var radius = uniform(.15, .7);
@@ -155,22 +146,20 @@ var addCylinderWingSeg = function(state, xbase, zlo, zhi)
 	var ylen = 2*radius;
 	var zlen = uniformrel(1, 5);
 	var geo = WingCylinders(xbase, zbase, zlen, radius);
-	var newstate = addGeometry(state, geo);
-	return { xlen: xlen, ylen: ylen, zlen: zlen, zbase: zbase, state: newstate }
+	addGeometry(geo);
+	return { xlen: xlen, ylen: ylen, zlen: zlen, zbase: zbase };
 }
 
-var addFin = function(state, i, ybase, zlo, zhi, xmax)
+var addFin = function(i, ybase, zlo, zhi, xmax)
 {
 	var xlen = uniformrel(0.5, 1.0) * xmax;
 	var ylen = uniformrel(0.1, 0.5);
 	var zlen = uniformrel(0.5, 1.0) * (zhi - zlo);
 	var zbase = 0.5*(zlo + zhi);
 	var geo = Geo.Shapes.Box(0, ybase + 0.5*ylen, zbase, xlen, ylen, zlen);
-	var newstate = addGeometry(state, geo);
+	addGeometry(geo);
 	if (flip(wi(i, 0.2)))
-		return addFin(newstate, i+1, ybase+ylen, zbase-0.5*zlen, zbase+0.5*zlen, xlen);
-	else
-		return newstate;
+		addFin(i+1, ybase+ylen, zbase-0.5*zlen, zbase+0.5*zlen, xlen);
 }
 
 
@@ -193,14 +182,15 @@ var newState = function()
 	// Assume availability of global 'voxparams'
 	return ModelStates.VoxelizingModelState.create(voxparams);
 }
-var addGeometry = function(state, geo)
+var addGeometry = function(geo)
 {
-	var newstate = state.addGeometry(geo);
+	var currstate = globalStore.modelState;
+	var newstate = currstate.addGeometry(geo);
+	globalStore.modelState = newstate;
 	// If the score isn't already -Infinity, insert a new
 	//    heuristic factor
-	if (state.score > -Infinity)
-		factor(newstate.score - state.score);
-	return newstate;
+	if (currstate.score > -Infinity)
+		factor(newstate.score - currstate.score);
 }
 
 
@@ -314,9 +304,11 @@ var WingGuns = function(xbase, ybase, zbase, length)
 // ----------------------------------------------------------------------------
 
 
-// var N = 1
-var N = 1000
-return MH(generate, N, false, true);
+// var N = 1;
+// var N = 1000;
+var N = 100;
+// return MH(generate, N, false, true);
+return ParticleFilter(generate, N, false, true);
 
 
 

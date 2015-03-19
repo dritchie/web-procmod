@@ -228,7 +228,7 @@ var Geo = (function() {
 	// Intersection testing
 
 	Geo.Geometry.prototype.intersects = (function() {
-		var FUDGE_FACTOR = 1e-2;
+		var FUDGE_FACTOR = 1e-3;
 		var thistribbox = new THREE.Box3();
 		var othertribbox = new THREE.Box3();
 		return function (othergeo)
