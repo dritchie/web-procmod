@@ -9,10 +9,14 @@ var Grids = (function(){
 	{
 		var m1 = 0x55555555;
 		var m2 = 0xc30c30c3;
-		x = x - ((x >> 1) & m1)
-		x = (x & m2) + ((x >> 2) & m2) + ((x >> 4) & m2)
-		x = x + (x >> 6)
-		return (x + (x >> 12) + (x >> 24)) & 0x3f;
+		x = x - ((x >>> 1) & m1)
+		// console.log(x);
+		// console.log((x & m2) >>> 0, ((x >>> 2) & m2) >>> 0, ((x >>> 4) & m2) >>> 0)
+		x = ((x & m2) >>> 0) + (((x >>> 2) & m2) >>> 0) + (((x >>> 4) & m2) >>> 0)
+		// console.log(x);
+		x = x + (x >>> 6)
+		// console.log(x);
+		return (x + (x >>> 12) + (x >>> 24)) & 0x3f >>> 0;
 	}
 
 	// Empty Uint32Arrays, for fast array clearing using .set
