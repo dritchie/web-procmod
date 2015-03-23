@@ -315,8 +315,11 @@ var addWings = Y(function(addWingsImpl)
 		var ylen = rets.ylen;	
 		var zlen = rets.zlen;
 		var zbase = rets.zbase;
-		if (flip(wi(i, 0.6)))
-			addWingsImpl(i+1, xbase+xlen, zbase-0.5*zlen, zbase+0.5*zlen);
+		delayed(function()
+		{
+			if (flip(wi(i, 0.6)))
+				addWingsImpl(i+1, xbase+xlen, zbase-0.5*zlen, zbase+0.5*zlen);
+		})();
 	});
 });
 
@@ -330,8 +333,11 @@ var addFin = Y(function(addFinImpl)
 		var zbase = 0.5*(zlo + zhi);
 		var geo = Geo.Shapes.Box(0, ybase + 0.5*ylen, zbase, xlen, ylen, zlen);
 		addGeometry(geo);
-		if (flip(wi(i, 0.2)))
-			addFinImpl(i+1, ybase+ylen, zbase-0.5*zlen, zbase+0.5*zlen, xlen);
+		delayed(function()
+		{
+			if (flip(wi(i, 0.2)))
+				addFinImpl(i+1, ybase+ylen, zbase-0.5*zlen, zbase+0.5*zlen, xlen);
+		})();
 	});
 });
 
@@ -347,24 +353,33 @@ var addBody = Y(function(addBodyImpl)
 		var bodyType = rets.type;
 		// Gen wings?
 		var wingprob = wi(i+1, 0.5);
-		if (flip(wingprob))
-			addWings(0, 0.5*xlen, rearz+0.5, rearz+zlen-0.5);
+		delayed(function()
+		{
+			if (flip(wingprob))
+				addWings(0, 0.5*xlen, rearz+0.5, rearz+zlen-0.5);
+		})();
 		// Gen fin?
 		var finprob = 0.7;
-		if (flip(finprob))
-			addFin(0, 0.5*ylen, rearz, rearz+zlen, 0.6*xlen);
+		delayed(function()
+		{
+			if (flip(finprob))
+				addFin(0, 0.5*ylen, rearz, rearz+zlen, 0.6*xlen);
+		})();
 		// Continue generating?
 		var nextprev = {type: bodyType, xlen: xlen, ylen: ylen};
-		if (flip(wi(i, 0.4)))
+		delayed(function()
 		{
-			addBodyImpl(i+1, rearz+zlen, nextprev);
-		}
-		else
-		{	
-			// TODO: Also have a box nose, like the old version?
-			if (flip(0.75))
-				addCylinderBodySeg(rearz+zlen, nextprev, true);
-		}
+			if (flip(wi(i, 0.4)))
+			{
+				addBodyImpl(i+1, rearz+zlen, nextprev);
+			}
+			else
+			{	
+				// TODO: Also have a box nose, like the old version?
+				if (flip(0.75))
+					addCylinderBodySeg(rearz+zlen, nextprev, true);
+			}
+		})();
 	});
 });
 
@@ -381,7 +396,8 @@ var generate = function()
 
 
 // var N = 1000;
-var N = 100;
+// var N = 100;
+var N = 300;
 // return MH(generate, N, false, true);
 return ParticleFilter(generate, N, false, true, true);
 
