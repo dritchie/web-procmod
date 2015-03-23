@@ -184,7 +184,7 @@
 				gui_sample = gui.add(guistate, "sampleIndex", 0, samps.length-1).step(1).name("sample #");
 				gui_sample.onChange(select_sample);
 				gui_score = gui.add(guistate, "score", minscore, maxscore);
-				gui_showbestingen = gui.add(guistate, "showBestInGen").name("show best in gen");
+				gui_showbestingen = gui.add(guistate, "showBestInGen").name("show best");
 
 				var samp_to_show = (showBestSample == true) ? bestidx_ingen : guistate.sampleIndex;
 				guistate.sampleIndex = samp_to_show;
