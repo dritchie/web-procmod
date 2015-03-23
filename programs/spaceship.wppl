@@ -1,26 +1,17 @@
 
 // Stochastic ordering
-var delayed = function(fn)
+var future = function(fn)
 {
-	return function()
-	{
-		var args = arguments;
-		if (globalStore.__futures === undefined)
-			globalStore.__futures = [];
-		var future = function() { return apply(fn, args); }
-		globalStore.__futures = globalStore.__futures.concat([future]);
-		return future;
-	}
+	if (globalStore.__futures === undefined)
+		globalStore.__futures = [];
+	globalStore.__futures = globalStore.__futures.concat([fn]);
+	return fn;
 }
 
 // // Depth-first ordering
-// var delayed = function(fn)
+// var future = function(fn)
 // {
-// 	return function()
-// 	{
-// 		var args = arguments;
-// 		apply(fn, arguments);
-// 	}
+// 	return fn();
 // }
 
 var force = function(future)
@@ -46,21 +37,6 @@ var finishall = function()
 		}
 	}
 }
-
-// ----------------------------------------------------------------------------
-
-var Y = function (F) {
- return (function (x) {
-  return F(function () {
-  	var args = arguments;
-  	return apply((x(x)), args);});
-  })
-        (function (x) {
-  return F(function () {
-  	var args = arguments;
-  	return apply((x(x)), args);});
-  }) ;
-} ;
 
 
 // ----------------------------------------------------------------------------
@@ -270,8 +246,11 @@ var addBoxWingSeg = function(xbase, zlo, zhi)
 	var zlen = uniformrel(0.5, 4.0);
 	var geo = WingBoxes(xbase, zbase, xlen, ylen, zlen);
 	addGeometry(geo);
-	if (flip(0.5))
-		addWingGuns(xbase, zbase, xlen, ylen, zlen);
+	future(function()
+	{
+		if (flip(0.5))
+			addWingGuns(xbase, zbase, xlen, ylen, zlen);
+	});
 	return { xlen: xlen, ylen: ylen, zlen: zlen, zbase: zbase };
 }
 
@@ -306,87 +285,81 @@ var addWingSeg = function(xbase, zlo, zhi)
 		return addCylinderWingSeg(xbase, zlo, zhi);
 }
 
-var addWings = Y(function(addWingsImpl)
+var addWings = function(i, xbase, zlo, zhi)
 {
-	return delayed(function(i, xbase, zlo, zhi)
+	var rets = addWingSeg(xbase, zlo, zhi);
+	var xlen = rets.xlen;
+	var ylen = rets.ylen;	
+	var zlen = rets.zlen;
+	var zbase = rets.zbase;
+	future(function()
 	{
-		var rets = addWingSeg(xbase, zlo, zhi);
-		var xlen = rets.xlen;
-		var ylen = rets.ylen;	
-		var zlen = rets.zlen;
-		var zbase = rets.zbase;
-		delayed(function()
-		{
-			if (flip(wi(i, 0.6)))
-				addWingsImpl(i+1, xbase+xlen, zbase-0.5*zlen, zbase+0.5*zlen);
-		})();
+		if (flip(wi(i, 0.6)))
+			addWings(i+1, xbase+xlen, zbase-0.5*zlen, zbase+0.5*zlen);
 	});
-});
+}
 
-var addFin = Y(function(addFinImpl)
+var addFin = function(i, ybase, zlo, zhi, xmax)
 {
-	return delayed(function(i, ybase, zlo, zhi, xmax)
+	var xlen = uniformrel(0.5, 1.0) * xmax;
+	var ylen = uniformrel(0.1, 0.5);
+	var zlen = uniformrel(0.5, 1.0) * (zhi - zlo);
+	var zbase = 0.5*(zlo + zhi);
+	var geo = Geo.Shapes.Box(0, ybase + 0.5*ylen, zbase, xlen, ylen, zlen);
+	addGeometry(geo);
+	future(function()
 	{
-		var xlen = uniformrel(0.5, 1.0) * xmax;
-		var ylen = uniformrel(0.1, 0.5);
-		var zlen = uniformrel(0.5, 1.0) * (zhi - zlo);
-		var zbase = 0.5*(zlo + zhi);
-		var geo = Geo.Shapes.Box(0, ybase + 0.5*ylen, zbase, xlen, ylen, zlen);
-		addGeometry(geo);
-		delayed(function()
-		{
-			if (flip(wi(i, 0.2)))
-				addFinImpl(i+1, ybase+ylen, zbase-0.5*zlen, zbase+0.5*zlen, xlen);
-		})();
+		if (flip(wi(i, 0.2)))
+			addFin(i+1, ybase+ylen, zbase-0.5*zlen, zbase+0.5*zlen, xlen);
 	});
-});
+}
 
-var addBody = Y(function(addBodyImpl)
+var addBody = function(i, rearz, prev)
 {
-	return delayed(function(i, rearz, prev)
+	// Gen new body segment
+	var rets = addBodySeg(rearz, prev);
+	var xlen = rets.xlen;
+	var ylen = rets.ylen;
+	var zlen = rets.zlen;
+	var bodyType = rets.type;
+	// Gen wings?
+	var wingprob = wi(i+1, 0.5);
+	future(function()
 	{
-		// Gen new body segment
-		var rets = addBodySeg(rearz, prev);
-		var xlen = rets.xlen;
-		var ylen = rets.ylen;
-		var zlen = rets.zlen;
-		var bodyType = rets.type;
-		// Gen wings?
-		var wingprob = wi(i+1, 0.5);
-		delayed(function()
-		{
-			if (flip(wingprob))
-				addWings(0, 0.5*xlen, rearz+0.5, rearz+zlen-0.5);
-		})();
-		// Gen fin?
-		var finprob = 0.7;
-		delayed(function()
-		{
-			if (flip(finprob))
-				addFin(0, 0.5*ylen, rearz, rearz+zlen, 0.6*xlen);
-		})();
-		// Continue generating?
-		var nextprev = {type: bodyType, xlen: xlen, ylen: ylen};
-		delayed(function()
-		{
-			if (flip(wi(i, 0.4)))
-			{
-				addBodyImpl(i+1, rearz+zlen, nextprev);
-			}
-			else
-			{	
-				// TODO: Also have a box nose, like the old version?
-				if (flip(0.75))
-					addCylinderBodySeg(rearz+zlen, nextprev, true);
-			}
-		})();
+		if (flip(wingprob))
+			addWings(0, 0.5*xlen, rearz+0.5, rearz+zlen-0.5);
 	});
-});
+	// Gen fin?
+	var finprob = 0.7;
+	future(function()
+	{
+		if (flip(finprob))
+			addFin(0, 0.5*ylen, rearz, rearz+zlen, 0.6*xlen);
+	});
+	// Continue generating?
+	var nextprev = {type: bodyType, xlen: xlen, ylen: ylen};
+	future(function()
+	{
+		if (flip(wi(i, 0.4)))
+		{
+			addBody(i+1, rearz+zlen, nextprev);
+		}
+		else
+		{	
+			// TODO: Also have a box nose, like the old version?
+			if (flip(0.75))
+				addCylinderBodySeg(rearz+zlen, nextprev, true);
+		}
+	});
+}
 
 var generate = function()
 {
 	globalStore.modelState = newState();
-	addBody(0, -5, {type: null, xlen: 0, ylen: 0});
+	future(function()
+	{
+		addBody(0, -5, {type: null, xlen: 0, ylen: 0});
+	});
 	finishall();
 	return globalStore.modelState;
 }
