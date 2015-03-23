@@ -381,11 +381,10 @@ var generate = function()
 // ----------------------------------------------------------------------------
 
 
-// var N = 1;
 // var N = 1000;
-var N = 300;
+var N = 100;
 // return MH(generate, N, false, true);
-return ParticleFilter(generate, N, false, true);
+return ParticleFilter(generate, N, false, true, true);
 
 
 
