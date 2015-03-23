@@ -78,10 +78,9 @@ var addGeometry = function(geo)
 	var currstate = globalStore.modelState;
 	var newstate = currstate.addGeometry(geo);
 	globalStore.modelState = newstate;
-	// If the score isn't already -Infinity, insert a new
-	//    heuristic factor
-	if (currstate.score > -Infinity)
-		factor(newstate.score - currstate.score);
+	// This extra bit of logic is to prevent NaNs (from -Infinity - -Infinity calculations)
+	var score = (currstate.score == -Infinity) ? -Infinity : (newstate.score - currstate.score);
+	factor(score);
 }
 
 
