@@ -28,7 +28,8 @@
 			var scene, camera, renderer, materials, controls;
 			var compiledCode, topK, _trampoline;
 			var guistate, gui;
-			var gui_sample = null, gui_score = null, gui_generation = null, gui_showbest = null;
+			var gui_sample = null, gui_score = null, gui_generation = null;
+			var gui_showbestingen = null, gui_showbestoverall = null;
 			var model = null;
 			var targetmodel = null;
 
@@ -36,7 +37,8 @@
 			var generations_models = null;
 			var samps = null;
 			var sampmodels = null;
-			var bestidx = 0;
+			var bestidx_ingen = 0;
+			var bestidx_overall_gen = 0, bestidx_overall_samp = 0;
 
 			var voxparams =
 			{
@@ -118,6 +120,27 @@
 						guistate.generationIndex = generations_samps.length-1;
 						gui_generation = gui.add(guistate, "generationIndex", 0, generations_samps.length-1).step(1).name("generation #");
 						gui_generation.onChange(select_generation);
+
+						// Also add show best overall button
+						if (gui_showbestoverall !== null)
+							gui.remove(gui_showbestoverall)
+						gui_showbestoverall = gui.add(guistate, "showBestOverall").name("show best overall");
+						// Find the best scoring overall sample and store it
+						var bestscore = -Infinity;
+						for (var g = 0; g < generations_samps.length; g++)
+						{
+							var gsamps = generations_samps[g];
+							for (var s = 0; s < gsamps.length; s++)
+							{
+								var gsamp = gsamps[s];
+								if (gsamp.score > bestscore)
+								{
+									bestscore = gsamp.score;
+									bestidx_overall_gen = g;
+									bestidx_overall_samp = s;
+								}
+							}
+						}
 					}
 
 					// Call select_generation to update the sample / score GUI widgets
@@ -134,7 +157,7 @@
 				// Calibrate widgets to the highest/lowest score.
 				samps = generations_samps[i];
 				sampmodels = generations_models[i];
-				bestidx = 0;
+				bestidx_ingen = 0;
 				var maxscore = -Infinity;
 				var minscore = Infinity;
 				for (var i = 0; i < samps.length; i++)
@@ -143,7 +166,7 @@
 					if (samp.score > maxscore)
 					{
 						maxscore = samp.score;
-						bestidx = i;
+						bestidx_ingen = i;
 					}
 					if (samp.score > -Infinity)
 						minscore = Math.min(samp.score, minscore);
@@ -155,15 +178,15 @@
 					gui.remove(gui_score);
 				if (gui_sample !== null)
 					gui.remove(gui_sample);
-				if (gui_showbest !== null)
-					gui.remove(gui_showbest);
+				if (gui_showbestingen !== null)
+					gui.remove(gui_showbestingen);
 				guistate.score = maxscore;
 				gui_sample = gui.add(guistate, "sampleIndex", 0, samps.length-1).step(1).name("sample #");
 				gui_sample.onChange(select_sample);
 				gui_score = gui.add(guistate, "score", minscore, maxscore);
-				gui_showbest = gui.add(guistate, "showBest").name("show best");
+				gui_showbestingen = gui.add(guistate, "showBestInGen").name("show best in gen");
 
-				var samp_to_show = (showBestSample == true) ? bestidx : guistate.sampleIndex;
+				var samp_to_show = (showBestSample == true) ? bestidx_ingen : guistate.sampleIndex;
 				guistate.sampleIndex = samp_to_show;
 				gui_sample.setValue(samp_to_show);   // Will invoke select_sample
 			}
@@ -193,9 +216,15 @@
 				}
 			}
 
-			function show_best_sample()
+			function show_best_in_generation()
 			{
-				gui_sample.setValue(bestidx);
+				gui_sample.setValue(bestidx_ingen);
+			}
+
+			function show_best_overall()
+			{
+				gui_generation.setValue(bestidx_overall_gen);
+				gui_sample.setValue(bestidx_overall_samp);
 			}
 
 			function toggle_target()
@@ -259,7 +288,8 @@
 				guistate = 
 				{
 					generate: generate,
-					showBest: show_best_sample,
+					showBestInGen: show_best_in_generation,
+					showBestOverall: show_best_overall,
 					showTarget: false,
 					score: 0,
 					generationIndex: 0,
