@@ -43,6 +43,8 @@
 				bounds: null,
 				targetGrid: new Grids.BinaryGrid3()
 			};
+			var targetMeshFile = "targets/shipProxy2.obj";
+			var codeFile = "programs/spaceship.wppl";
 
 			function animate() 
 			{
@@ -63,14 +65,7 @@
 				render();
 			}
 
-			function webppl_compile(code)
-			{
-				compiledCode = webppl.compile("(function(){" + code + "})()");
-				console.log("Code compiled.");
-				webppl_generate();
-			}
-
-			function webppl_generate()
+			function generate()
 			{
 				var t0;
 				topK = function(store, erp)
@@ -156,48 +151,56 @@
 
 			function init()
 			{
+				// Scene
 				scene = new THREE.Scene();
 
+				// Camera
 				camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 100 );
 				camera.position.set(10, 10, 10);
 				camera.lookAt(new THREE.Vector3(0, 0, 0));
 
+				// Renderer
 				renderer = new THREE.WebGLRenderer({ antialias: true });
 				renderer.setClearColor(new THREE.Color(0.2, 0.2, 0.2), 1.0);
 				renderer.setSize( window.innerWidth, window.innerHeight );
 				document.body.appendChild( renderer.domElement );
 
+				// Lights
 				var amblight = new THREE.AmbientLight(new THREE.Color(.3, .3, .3).getHex());
 				var dirlight = new THREE.DirectionalLight(0xffffff, 1.0);
 				dirlight.position.set(-1, 1, 1);
 				scene.add(amblight);
 				scene.add(dirlight);
 
-				// Add dummy object to the Scene, to maintain the invariant that the last child is always
-				//    the object being displayed.
-				scene.add(new THREE.Object3D());
-
+				// Basic flat shading + wireframe material
 				materials = [
 					new THREE.MeshLambertMaterial({ color: new THREE.Color(.9, .9, .9).getHex(), shading: THREE.FlatShading, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }),
 					new THREE.MeshBasicMaterial({ color: 0x000000, shading: THREE.FlatShading, wireframe: true, wireframeLinewidth: 2, transparent: true })
 				];
 
+				// Add dummy object to the Scene, to maintain the invariant that the last child is always
+				//    the object being displayed.
+				scene.add(new THREE.Object3D());
+
+				// Camera controls
 				controls = new THREE.OrbitControls( camera );
 				controls.damping = 0.2;
 				controls.addEventListener( 'change', render );
 
+				// GUI
 				gui = new dat.GUI();
 				guistate = 
 				{
-					generate: webppl_generate,
+					generate: generate,
 					showTarget: false,
 					score: 0,
 					sampleIndex: 0
 				}
-				gui.add(guistate, "generate");
-				gui.add(guistate, "showTarget").name("show target").onChange(toggle_target);
 
+				// Resize event handler
 				window.addEventListener( 'resize', onWindowResize, false );
+
+				// Begin main event loop
 				animate();
 
 				// var editor = CodeMirror.fromTextArea(document.getElementById("code"),
@@ -207,10 +210,9 @@
 				// 	autoCloseBrackets: true
 				// });
 
-				// ------------------------------------------------
-
+				// Load target mesh
 				var loader = new THREE.OBJLoader();
-				loader.load("targets/shipProxy2.obj", function(object)
+				loader.load(targetMeshFile, function (object)
 				{
 					// Returns an Object3D which has one Mesh as a child.
 					// The mesh's geometry is a BufferGeometry.
@@ -224,23 +226,17 @@
 					voxparams.bounds.expandByScalar(0.1);
 					voxparams.targetGrid.clearall();
 					mygeom.voxelize(voxparams.targetGrid, voxparams.bounds, voxparams.size, true);
+					gui.add(guistate, "showTarget").name("show target").onChange(toggle_target);
 					console.log("Target grid ready.")
 
-					$.get("programs/spaceship.wppl", webppl_compile);
+					// Load WebPPL procedural modeling code
+					$.get(codeFile, function (code)
+					{
+						compiledCode = webppl.compile("(function(){" + code + "})()");
+						console.log("Code compiled.");
+						gui.add(guistate, "generate");
+					});		
 				});
-
-				// var box = Geo.Shapes.Box(0, 0, 0, 4, 4, 2);
-				// var cyl = Geo.Shapes.Cylinder(0, 0, 0, 2, 8, 1, 1);
-				// var m = new THREE.Matrix4();
-				// m.makeRotationX(Math.PI/2);
-				// cyl.transform(m);
-				// m.makeTranslation(0, 0, 1);
-				// cyl.transform(m);
-				// console.log(box.intersects(cyl));
-				// cyl.merge(box);
-				// var obj = new THREE.SceneUtils.createMultiMaterialObject(cyl.toThreeGeo(), materials);
-				// scene.add(obj);
-				// render();
 
 			}
 
