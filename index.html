@@ -28,7 +28,7 @@
 			var scene, camera, renderer, materials, controls;
 			var compiledCode, topK, _trampoline;
 			var guistate, gui;
-			var gui_sample = null, gui_score = null, gui_generation = null;
+			var gui_sample = null, gui_score = null, gui_generation = null, gui_showbest = null;
 			var model = null;
 			var targetmodel = null;
 
@@ -36,6 +36,7 @@
 			var generations_models = null;
 			var samps = null;
 			var sampmodels = null;
+			var bestidx = 0;
 
 			var voxparams =
 			{
@@ -133,7 +134,7 @@
 				// Calibrate widgets to the highest/lowest score.
 				samps = generations_samps[i];
 				sampmodels = generations_models[i];
-				var bestidx = 0;
+				bestidx = 0;
 				var maxscore = -Infinity;
 				var minscore = Infinity;
 				for (var i = 0; i < samps.length; i++)
@@ -154,15 +155,17 @@
 					gui.remove(gui_score);
 				if (gui_sample !== null)
 					gui.remove(gui_sample);
+				if (gui_showbest !== null)
+					gui.remove(gui_showbest);
 				guistate.score = maxscore;
 				gui_sample = gui.add(guistate, "sampleIndex", 0, samps.length-1).step(1).name("sample #");
 				gui_sample.onChange(select_sample);
 				gui_score = gui.add(guistate, "score", minscore, maxscore);
+				gui_showbest = gui.add(guistate, "showBest").name("show best");
 
 				var samp_to_show = (showBestSample == true) ? bestidx : guistate.sampleIndex;
 				guistate.sampleIndex = samp_to_show;
 				gui_sample.setValue(samp_to_show);   // Will invoke select_sample
-				gui_sample.updateDisplay();
 			}
 
 			function select_sample(i)
@@ -188,6 +191,11 @@
 					gui_score.updateDisplay();
 					render();
 				}
+			}
+
+			function show_best_sample()
+			{
+				gui_sample.setValue(bestidx);
 			}
 
 			function toggle_target()
@@ -251,6 +259,7 @@
 				guistate = 
 				{
 					generate: generate,
+					showBest: show_best_sample,
 					showTarget: false,
 					score: 0,
 					generationIndex: 0,
