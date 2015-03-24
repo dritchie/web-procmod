@@ -26,7 +26,7 @@
 		</div> -->
 		<script>
 			var scene, camera, renderer, materials, controls;
-			var compiledCode, topK, _trampoline;
+			var compiledProgram;
 			var guistate, gui;
 			var gui_sample = null, gui_score = null, gui_generation = null;
 			var gui_showbestingen = null, gui_showbestoverall = null;
@@ -42,12 +42,12 @@
 
 			var voxparams =
 			{
-				percentSameSigma: 0.02,
-				percentOutsideSigma: 0.02,
+				// percentSameSigma: 0.02,
+				// percentOutsideSigma: 0.02,
 				// percentSameSigma: 0.01,
 				// percentOutsideSigma: 0.01,
-				// percentSameSigma: 0.005,
-				// percentOutsideSigma: 0.005,
+				percentSameSigma: 0.005,
+				percentOutsideSigma: 0.005,
 				size: 0.25,
 				bounds: null,
 				targetGrid: new Grids.BinaryGrid3()
@@ -81,7 +81,7 @@
 
 				// Top-level continuation / callback that'll be invoked
 				//    when inference finishes.
-				topK = function(store, erp)
+				var doneK = function(store, erp)
 				{
 					_trampoline = null;
 
@@ -151,7 +151,7 @@
 
 				// Run inference (and time it).
 				t0 = performance.now();
-				eval(compiledCode);
+				compiledProgram({}, doneK, "");
 			}
 
 			function select_generation(i, showBestSample)
@@ -333,8 +333,9 @@
 					// Load WebPPL procedural modeling code
 					$.get(codeFile, function (code)
 					{
-						compiledCode = webppl.compile("(function(){" + code + "})()");
-						console.log("Code compiled.");
+						var compiledCode = webppl.compile("(function(){" + code + "})()", true);
+						// console.log(compiledCode);
+						compiledProgram = eval(compiledCode);
 						gui.add(guistate, "generate");
 					});		
 				});
