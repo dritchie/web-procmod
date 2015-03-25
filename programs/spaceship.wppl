@@ -1,47 +1,4 @@
 
-// Stochastic ordering
-var future = function(fn)
-{
-	if (globalStore.__futures === undefined)
-		globalStore.__futures = [];
-	globalStore.__futures = globalStore.__futures.concat([fn]);
-	return fn;
-}
-
-// // Depth-first ordering
-// var future = function(fn)
-// {
-// 	return fn();
-// }
-
-var force = function(future)
-{
-	var i = globalStore.__futures.indexOf(future);
-	globalStore.__futures = globalStore.__futures.slice();
-	globalStore.__futures.splice(i, 1);
-	return future();
-}
-
-var finishall = function()
-{
-	if (globalStore.__futures !== undefined)
-	{
-		if (globalStore.__futures.length > 0)
-		{
-			var i = randomInteger(globalStore.__futures.length);
-			var future = globalStore.__futures[i];
-			globalStore.__futures = globalStore.__futures.slice();
-			globalStore.__futures.splice(i, 1);
-			future();
-			finishall();
-		}
-	}
-}
-
-
-// ----------------------------------------------------------------------------
-
-
 // Generating / adding to model states
 var newState = function()
 {
@@ -367,10 +324,9 @@ var generate = function()
 
 // ----------------------------------------------------------------------------
 
-
-// var N = 1000;
 // var N = 100;
 var N = 300;
+// var N = 1000;
 // return MH(generate, N, false, true);
 return ParticleFilter(generate, N, true, true, true);
 
