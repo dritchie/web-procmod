@@ -36,13 +36,10 @@ var wi = function(i, w) { return Math.exp(-w*i); }
 
 var N_CYLINDER = 8;
 
-var mrot = Object.create(THREE.Matrix4.prototype);
-THREE.Matrix4.apply(mrot);
+var mrot = Object.new(THREE.Matrix4);
 mrot.makeRotationX(Math.PI/2);
-var m1 = Object.create(THREE.Matrix4.prototype);
-THREE.Matrix4.call(m1);
-var m2 = Object.create(THREE.Matrix4.prototype);
-THREE.Matrix4.call(m2);
+var m1 = Object.new(THREE.Matrix4);
+var m2 = Object.new(THREE.Matrix4);
 var BodyCylinder = function(zbase, length, baseRadius, tipRadius)
 {
 	m1.makeTranslation(0, 0, 0.5*length+zbase);
@@ -53,15 +50,12 @@ var BodyCylinder = function(zbase, length, baseRadius, tipRadius)
 	return cyl;
 }
 
-var m3 = Object.create(THREE.Matrix4.prototype);
-THREE.Matrix4.call(m3);
-var m4 = Object.create(THREE.Matrix4.prototype);
-THREE.Matrix4.call(m4);
+var m3 = Object.new(THREE.Matrix4);
+var m4 = Object.new(THREE.Matrix4);
 var BodyCluster = function(zbase, length, radius)
 {
 	var cyl = Geo.Shapes.Cylinder(0, 0, 0, length, N_CYLINDER, radius);
-	var geo = Object.create(Geo.Geometry.prototype);
-	Geo.Geometry.call(geo);
+	var geo = Object.new(Geo.Geometry);
 	m1.makeTranslation(0, 0, 0.5*length+zbase);
 	m2.makeTranslation(0, -0.5*length, 0);
 	m1.multiply(mrot).multiply(m2);
@@ -96,8 +90,7 @@ var WingBoxes = function(xbase, zbase, xlen, ylen, zlen)
 var WingCylinders = function(xbase, zbase, length, radius)
 {
 	var cyl = Geo.Shapes.Cylinder(0, 0, 0, length, N_CYLINDER, radius);
-	var geo = Object.create(Geo.Geometry.prototype);
-	Geo.Geometry.call(geo);
+	var geo = Object.new(Geo.Geometry);
 	m1.makeTranslation(0, -.5*length, 0);
 	m2.copy(mrot).multiply(m1);
 	// Left
@@ -116,8 +109,7 @@ var WingGuns = function(xbase, ybase, zbase, length)
 {
 	var gunproto = Geo.Shapes.Cylinder(0, 0, 0, length, N_CYLINDER, gunRadius);
 	gunproto.addCylinder(0, length, 0, tipLength, N_CYLINDER, gunRadius, tipRadius);
-	var geo = Object.create(Geo.Geometry.prototype);
-	Geo.Geometry.call(geo);
+	var geo = Object.new(Geo.Geometry);
 	m1.makeTranslation(0, -.5*length, 0);
 	m2.copy(mrot).multiply(m1);
 	// 1
