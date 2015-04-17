@@ -1,0 +1,78 @@
+
+// Generating / adding to model states
+var newState = function() {
+	// Assume availability of global 'voxparams'
+	return ModelStates.VoxelizingModelState.create(voxparams);
+};
+
+var addGeometry = function(geo) {
+	var currstate = globalStore.modelState;
+	var newstate = currstate.addGeometry(geo);
+	globalStore.modelState = newstate;
+	// This extra bit of logic is to prevent NaNs (from -Infinity - -Infinity calculations)
+	var score = (currstate.score == -Infinity) ? -Infinity : (newstate.score - currstate.score);
+	factor(score);
+};
+
+var uniformrel = function(lo, hi) {
+	var u = uniform(0, 1);
+	return (1-u)*lo + u*hi;
+};
+
+
+// ----------------------------------------------------------------------------
+
+
+var branch = function(origradius, frame, i, depth, prev) {
+	// Only generate stuff if it's not too small to matter
+	if (frame.radius / origradius >= 0.1) {
+		var uprot = gaussian(0, Math.PI / 12);
+		var leftrot = gaussian(0, Math.PI / 12);
+		var len = uniformrel(3, 5) * frame.radius;
+		var endradius = uniformrel(0.7, 0.9) * frame.radius;
+
+		// Figure out where to split the segment
+		// (This is so the part we branch from is a pure conic section)
+		var nextframe = tree.advanceFrame(frame, uprot, leftrot, len, endradius);
+		var splitframe = tree.findSplitFrame(frame, nextframe);
+
+		// Place geometry
+		addGeometry(tree.treeSegment(prev, frame, splitframe, nextframe));
+
+		// Recursively branch
+		if (flip(tree.branchProb(depth, i))) {
+			// Theta mean/variance based on avg weighted by 'up-facing-ness'
+			var thetaMuSigma = tree.estimateThetaDistrib(splitframe, nextframe);
+			var theta = gaussian(thetaMuSigma[0], thetaMuSigma[1]);
+			var maxbranchradius = 0.5 * (nextframe.center - splitframe.center).length();
+			var branchradius = Math.min(uniformrel(0.9, 1) * nextframe.radius, maxbranchradius);
+			var bframeAndPrev = tree.branchFrame(splitframe, nextframe, 0.5, theta, branchradius);
+			branch(origradius, bframe, 0, depth + 1, prev);
+		}
+
+		// Keep generating same branch?
+		if (flip(tree.continueProb(i)))
+			branch(origradius, nextframe, i + 1, depth, null);
+	}
+};
+
+
+var generate = function() {
+	globalStore.modelState = newState();
+	var startframe = {
+		center: Object.new(THREE.Vector3, 0, 0, 0),
+		forward: Object.new(THREE.Vector3, 0, 1, 0),
+		up: Object.new(THREE.Vector3, 0, 0, -1),
+		radius: uniformrel(1.5, 2),
+		v: 0
+	};
+	branch(startframe.radius, startframe, 0, 0, null);
+	return globalStore.modelState;
+};
+
+
+// ----------------------------------------------------------------------------
+
+
+var N = 1000;
+return MH(generate, N, false, true);
