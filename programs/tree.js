@@ -5,9 +5,59 @@ var worldup = new THREE.Vector3(0, 1, 0);
 
 var lerp = function(lo, hi, t) { return (1-t)*lo + t*hi; };
 
+THREE.Matrix4.prototype.makePivot = function() {
+	var m1 = new THREE.Matrix4();
+	var m2 = new THREE.Matrix4();
+	return function (axis, angle, center) {
+		m1.makeTranslation(-center.x, -center.y, -center.z);
+		m2.makeRotationAxis(axis, angle);
+		this.multiply(m2);
+		this.multiply(m1);
+		return this;
+	};
+}();
+
+THREE.Vector3.prototype.inverseLerp = function() {
+	var d = new THREE.Vector3();
+	var tmp = new THREE.Vector3();
+	return function (p0, p1) {
+		d.copy(p1).sub(p0);
+		var dnorm = d.lengthSq();
+		return tmp.copy(this).sub(p0).dot(d) / dnorm;
+	};
+}();
+
 
 // ----------------------------------------------------------------------------
 
+var branchFrame = function() {
+	var ct = new THREE.Vector3();
+	var m = new THREE.Matrix4();
+	var m1 = new THREE.Matrix4();
+	var leftbf = new THREE.Vector3();
+	return function (startFrame, endFrame, t, theta, radius) {
+		// Construct the frame at the given t value
+		ct.copy(startFrame.center).lerp(endFrame.center, t);
+		var rt = lerp(startFrame.radius, endFrame.radius, t);
+		// This is just the inradius; need to compute the outradius,
+		//    since branches are polygonal approximations
+		rt /= math.cos(Math.PI/N_SEGS);
+
+		// Construct the branch frame
+		m.makePivot(endFrame.forward, theta, ct);
+		m1.makePivot(endFrame.forward, theta, endFrame.center);
+		var cbf = endFrame.up.clone().multiplyScalar(rt).add(ct).applyMatrix4(m);
+		var upbf = enframe.up.clone().multiplyScalar(endFrame.radius).add(endFrame.center).applyMatrix4(m1);
+		var fwdbf = cbf.clone().sub(ct).normalize();
+		leftbf.copy(upbf).cross(fwdbf);
+		fwdbf.copy(leftbf).cross(upbf);
+		// Compute the effective radius of the parent branch at the
+		//    extremes of this new branch frame
+		// Also turn these into outradii
+
+		// returns go here
+	};
+}();
 
 var findSplitFrame = function() {
 	var vzero = new THREE.Vector3(0, 0, 0);
@@ -42,7 +92,7 @@ var findSplitFrame = function() {
 			v: splitv
 		};
 	}
-};
+}();
 
 var estimateThetaDistrib = function() {
 	var N_THETA_SAMPS = 8;
@@ -77,6 +127,7 @@ var branchProb = function(depth, i) { return 0.5; };
 // ----------------------------------------------------------------------------
 
 module.exports = {
+	branchFrame: branchFrame,
 	findSplitFrame: findSplitFrame,
 	estimateThetaDistrib: estimateThetaDistrib,
 	continueProb: continueProb,

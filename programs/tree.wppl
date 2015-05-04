@@ -47,7 +47,9 @@ var branch = function(origradius, frame, i, depth, prev) {
 			var maxbranchradius = 0.5 * (nextframe.center - splitframe.center).length();
 			var branchradius = Math.min(uniformrel(0.9, 1) * nextframe.radius, maxbranchradius);
 			var bframeAndPrev = tree.branchFrame(splitframe, nextframe, 0.5, theta, branchradius);
-			branch(origradius, bframe, 0, depth + 1, prev);
+			var bframe = bframeAndPrev.frame;
+			var bprev = bframeAndPrev.prev;
+			branch(origradius, bframe, 0, depth + 1, bprev);
 		}
 
 		// Keep generating same branch?
@@ -76,3 +78,5 @@ var generate = function() {
 
 var N = 1000;
 return MH(generate, N, false, true);
+
+
