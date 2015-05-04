@@ -342,6 +342,7 @@ var Geo = (function() {
 		geo.indices.push(i3);
 		geo.indices.push(i0);
 	}
+	Geo.Geometry.quad = quad;
 
 	Geo.Geometry.prototype.addBox = function(cx, cy, cz, lx, ly, lz)
 	{
