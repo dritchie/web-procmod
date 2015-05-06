@@ -1,10 +1,13 @@
 var ModelStates = (function()
 {
-	var ModelStates = {};
+	var ModelStates = {
+		Sequential: {},
+		Compositional: {}
+	};
 
 	// ------------------------------------------------------------------------
 
-	ModelStates.VoxelizingModelState = function(voxparams)
+	ModelStates.Sequential.Voxelizing = function(voxparams)
 	{
 		this.geometry = null;
 		this.grid = null;
@@ -18,9 +21,9 @@ var ModelStates = (function()
 	// Voxparams has:
 	//   - 'bounds'
 	//   - one of 'size' or 'dims'
-	ModelStates.VoxelizingModelState.create = function(voxparams)
+	ModelStates.Sequential.Voxelizing.create = function(voxparams)
 	{
-		var ms = new ModelStates.VoxelizingModelState(voxparams);
+		var ms = new ModelStates.Sequential.Voxelizing(voxparams);
 		ms.geometry = new Geo.Geometry();
 		if (voxparams.dims === undefined)
 			voxparams.dims = voxparams.bounds.size().divideScalar(voxparams.size).ceil();
@@ -29,9 +32,9 @@ var ModelStates = (function()
 		return ms;
 	}
 
-	ModelStates.VoxelizingModelState.extend = function(geo, next, doupdate)
+	ModelStates.Sequential.Voxelizing.extend = function(geo, next, doupdate)
 	{
-		var ms = new ModelStates.VoxelizingModelState(next.voxparams);
+		var ms = new ModelStates.Sequential.Voxelizing(next.voxparams);
 		ms.geometry = geo;
 		if (doupdate)
 		{
@@ -44,9 +47,9 @@ var ModelStates = (function()
 		return ms;
 	}
 
-	ModelStates.VoxelizingModelState.prototype = 
+	ModelStates.Sequential.Voxelizing.prototype = 
 	{
-		constructor: ModelStates.VoxelizingModelState,
+		constructor: ModelStates.Sequential.Voxelizing,
 
 		addGeometry: function(geo)
 		{
@@ -58,12 +61,12 @@ var ModelStates = (function()
 			//    the score immediately drops to log(0).
 			if (this.score === -Infinity || this.intersects(geo))
 			{
-				newstate = ModelStates.VoxelizingModelState.extend(geo, this, false);
+				newstate = ModelStates.Sequential.Voxelizing.extend(geo, this, false);
 				newstate.score = -Infinity;
 			}
 			else
 			{
-				newstate = ModelStates.VoxelizingModelState.extend(geo, this, true);
+				newstate = ModelStates.Sequential.Voxelizing.extend(geo, this, true);
 				var vp = this.voxparams;
 				var percentSame = vp.targetGrid.percentCellsEqualPadded(newstate.grid);
 				var targetExtent = vp.bounds.size();
@@ -102,6 +105,70 @@ var ModelStates = (function()
 			return accumgeo;
 		}
 	}
+
+	// ------------------------------------------------------------------------
+
+	// TODO: Could possibly be made more efficient by maintaining a chain/tree
+	//    of states, as above.
+
+	ModelStates.Compositional.Voxelizing = function(voxparams)
+	{
+		this.geometry = null;
+		this.grid = null;
+		this.bbox = null;
+		this.score = -Infinity;
+		this.voxparams = voxparams;
+	}
+
+	// Voxparams has:
+	//   - 'bounds'
+	//   - one of 'size' or 'dims'
+	ModelStates.Compositional.Voxelizing.create = function(voxparams, geo)
+	{
+		var ms = new ModelStates.Compositional.Voxelizing(voxparams);
+		ms.geometry = geo;
+		if (voxparams.dims === undefined)
+			voxparams.dims = voxparams.bounds.size().divideScalar(voxparams.size).ceil();
+		ms.grid = new Grids.BinaryGrid3(voxparams.dims);
+		geo.voxelize(ms.grid, ms.voxparams.bounds, ms.grid.dims, true);
+		ms.bbox = geo.getbbox().clone();
+		ms.updateScore();
+		return ms;
+	}
+
+	// TODO: prototype with .combine, .updateScore
+	ModelStates.Compositional.Voxelizing.prototype = 
+	{
+		constructor: ModelStates.Compositional.Voxelizing,
+
+		combine: function(other)
+		{
+			var ns = new ModelStates.Compositional.Voxelizing(this.voxparams);
+			ns.geometry = this.geometry.combine(other.geometry);
+			// Only bother with combining grids / updating score if the two child
+			//   scores are both > -Infinity and they don't intersect each other.
+			if (this.score > -Infinity && other.score > -Infinity &&
+				!this.geometry.intersects(other.geometry))
+			{
+				ns.grid = this.grid.union(other.grid);
+				ns.bbox = this.bbox.clone().union(other.bbox);
+				ns.updateScore();
+			}
+			return ns;
+		},
+
+		updateScore: function()
+		{
+			var vp = this.voxparams;
+			var percentSame = vp.targetGrid.percentCellsEqualPadded(this.grid);
+			var targetExtent = vp.bounds.size();
+			var extralo = vp.bounds.min.clone().sub(this.bbox.min).clampScalar(0, Infinity).divide(targetExtent);
+			var extrahi = this.bbox.max.clone().sub(vp.bounds.max).clampScalar(0, Infinity).divide(targetExtent);
+			var percentOutside = extralo.x + extralo.y + extralo.z + extrahi.x + extrahi.y + extrahi.z;
+			this.score = gaussianERP.score([1, vp.percentSameSigma], percentSame) +
+						 gaussianERP.score([0, vp.percentOutsideSigma], percentOutside);
+		}
+	};
 
 	// ------------------------------------------------------------------------
 

@@ -2,7 +2,7 @@
 // Generating / adding to model states
 var newState = function() {
 	// Assume availability of global 'voxparams'
-	return ModelStates.VoxelizingModelState.create(voxparams);
+	return ModelStates.Sequential.Voxelizing.create(voxparams);
 };
 
 var addGeometry = function(geo) {
