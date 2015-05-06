@@ -21,6 +21,7 @@ var tree = function() {
 		return function (axis, angle, center) {
 			m1.makeTranslation(-center.x, -center.y, -center.z);
 			m2.makeRotationAxis(axis, angle);
+			this.makeTranslation(center.x, center.y, center.z);
 			this.multiply(m2);
 			this.multiply(m1);
 			return this;
@@ -61,9 +62,11 @@ var tree = function() {
 						 .add(frame.center);
 			geo.vertices.push(v);
 			geo.uvs.push(new THREE.Vector2(0, frame.v));
+			// geo.merge(Geo.Shapes.Box(v.x, v.y, v.z, .2, .2, .2));
 			m.makePivot(frame.forward, rotamt, frame.center);
 			for (var i = 1; i < N_SEGS + 1; i++) {
 				v = v.clone().applyMatrix4(m);
+				// geo.merge(Geo.Shapes.Box(v.x, v.y, v.z, .2, .2, .2));
 				geo.vertices.push(v);
 				geo.uvs.push(new THREE.Vector2(i/N_SEGS, frame.v));
 			}
@@ -127,7 +130,7 @@ var tree = function() {
 		var geo = new Geo.Geometry();
 		// Vertices 0,N_SEGS are the bottom outline of the base
 		var nadded = circleOfVerts(geo, frame0);
-		// Vertices N_SEGS+1,2*N_SEGS are teh outline of the split frame
+		// Vertices N_SEGS+1,2*N_SEGS are the outline of the split frame
 		circleOfVerts(geo, frame1);
 		// Finally, we have the vertices of the end frame
 		circleOfVerts(geo, frame2);
@@ -157,9 +160,9 @@ var tree = function() {
 			left.copy(up).cross(fwd);
 			uprotmat.makeRotationAxis(up, uprot);
 			leftrotmat.makeRotationAxis(left, leftrot);
-			var newup = up.clone().applyMatrix4(leftrotmat);
+			var newup = up.clone().transformDirection(leftrotmat);
 			leftrotmat.multiply(uprotmat);
-			var newfwd = fwd.clone().applyMatrix4(leftrotmat);
+			var newfwd = fwd.clone().transformDirection(leftrotmat);
 			var newc = newfwd.clone().multiplyScalar(len).add(c);
 			var newv = frame.v + (WORLD_TO_TEX/frame.radius)*len;
 			return {
@@ -244,7 +247,7 @@ var tree = function() {
 			tmp.copy(p1).sub(p0);
 			var t2 = tmp.dot(endFrame.forward);
 			var t = t1 / t2;
-			p3.copy(startFrame.v).lerp(endFrame.v, t);
+			p3.copy(p0).lerp(p1, t);
 			var r = tmp.copy(p3).sub(p2).length() * 0.5;
 			p2.add(tmp.copy(endFrame.forward).multiplyScalar(r * 0.1));
 			var c = p2.clone().add(p3).multiplyScalar(0.5);
