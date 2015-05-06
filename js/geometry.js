@@ -103,11 +103,13 @@ var Geo = (function() {
 				var face = new THREE.Face3(i0, i1, i2);
 				threegeo.faces.push(face);
 				// UVs
-				var uvs = [];
-				uvs.push(this.uvs[i0]);
-				uvs.push(this.uvs[i1]);
-				uvs.push(this.uvs[i2]);
-				threegeo.faceVertexUvs[0].push(uvs);
+				if (this.uvs.length > 0) {
+					var uvs = [];
+					uvs.push(this.uvs[i0]);
+					uvs.push(this.uvs[i1]);
+					uvs.push(this.uvs[i2]);
+					threegeo.faceVertexUvs[0].push(uvs);
+				}
 			}
 			threegeo.computeFaceNormals();
 			return threegeo;
