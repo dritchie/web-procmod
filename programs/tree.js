@@ -6,6 +6,9 @@ var tree = function() {
 	var worldup = new THREE.Vector3(0, 1, 0);
 	var WORLD_TO_TEX = 0.15
 
+	if (N_SEGS < 6 || (N_SEGS-2)%4 !== 0)
+		throw "N_SEGS must be one of 6, 10, 14, 18, ...";
+
 
 	// ----------------------------------------------------------------------------
 
