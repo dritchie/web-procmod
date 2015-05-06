@@ -93,12 +93,6 @@ var Geo = (function() {
 			// Copy vertices
 			for (var i = 0; i < this.vertices.length; i++)
 				threegeo.vertices.push(this.vertices[i].clone());
-			// Prep UVs for copy, if we have any
-			if (this.uvs.length > 0)
-			{
-				for (var i = 0; i < this.vertices.length; i++)
-					threegeo.faceVertexUVs[0].push(new THREE.Vector2());
-			}
 			// Copy faces and UVs
 			for (var i = 0; i < this.indices.length/3; i++)
 			{
@@ -109,12 +103,11 @@ var Geo = (function() {
 				var face = new THREE.Face3(i0, i1, i2);
 				threegeo.faces.push(face);
 				// UVs
-				if (this.uvs.length > 0)
-				{
-					threegeo.faceVertexUVs[0][i0].copy(this.uvs[i0]);
-					threegeo.faceVertexUVs[0][i1].copy(this.uvs[i1]);
-					threegeo.faceVertexUVs[0][i2].copy(this.uvs[i2]);
-				}
+				var uvs = [];
+				uvs.push(this.uvs[i0]);
+				uvs.push(this.uvs[i1]);
+				uvs.push(this.uvs[i2]);
+				threegeo.faceVertexUvs[0].push(uvs);
 			}
 			threegeo.computeFaceNormals();
 			return threegeo;
