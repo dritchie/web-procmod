@@ -18,6 +18,7 @@
 		<script src="js/grids.js"></script>
 		<script src="js/intersection.js"></script>
 		<script src="js/futures.js"></script>
+		<script src="programs/tree.js"></script>
 	</head>
 	<body>
 <!-- 		<div>
@@ -54,12 +55,13 @@
 				targetGrid: new Grids.BinaryGrid3()
 			};
 
-			var targetMeshFile = "targets/shipProxy2.obj";
-			var codeFile = "programs/spaceship.wppl";
+			// var targetMeshFile = "targets/shipProxy2.obj";
+			// var codeFile = "programs/spaceship.wppl";
+			var targetMeshFile = "targets/treeProxy5.obj";
+			var codeFile = "programs/tree.wppl";
 
 			// Substitute for 'new' that is valid in WebPPL code
-			// (Some people say you should never modify the prototype Object.
-			//     I like to live dangerously).
+			// (Some people say you should never modify the prototype Object. I like to live dangerously).
 			Object.new = function() {
 				var ctor = arguments[0];
 				var args = Array.prototype.slice.call(arguments, 1);

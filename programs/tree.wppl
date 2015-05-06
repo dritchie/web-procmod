@@ -23,6 +23,7 @@ var uniformrel = function(lo, hi) {
 // ----------------------------------------------------------------------------
 
 
+var tmp = Object.new(THREE.Vector3);
 var branch = function(origradius, frame, i, depth, prev) {
 	// Only generate stuff if it's not too small to matter
 	if (frame.radius / origradius >= 0.1) {
@@ -44,7 +45,8 @@ var branch = function(origradius, frame, i, depth, prev) {
 			// Theta mean/variance based on avg weighted by 'up-facing-ness'
 			var thetaMuSigma = tree.estimateThetaDistrib(splitframe, nextframe);
 			var theta = gaussian(thetaMuSigma[0], thetaMuSigma[1]);
-			var maxbranchradius = 0.5 * (nextframe.center - splitframe.center).length();
+			var maxbranchradius = tmp.copy(nextframe.center).sub(splitframe.center)
+			                         .multiplyScalar(0.5).length();
 			var branchradius = Math.min(uniformrel(0.9, 1) * nextframe.radius, maxbranchradius);
 			var bframeAndPrev = tree.branchFrame(splitframe, nextframe, 0.5, theta, branchradius);
 			var bframe = bframeAndPrev.frame;
@@ -76,7 +78,8 @@ var generate = function() {
 // ----------------------------------------------------------------------------
 
 
-var N = 1000;
+// var N = 1000;
+var N = 1;
 return MH(generate, N, false, true);
 
 
