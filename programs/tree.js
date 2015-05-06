@@ -105,14 +105,14 @@ var tree = function() {
 		var d = new THREE.Vector3();
 		var p = new THREE.Vector3();
 		return function (geo, baseFrame, prev) {
-			center.copy(prev.lopoint).add(prev.hipoint).multiplyScalar(0.5);
+			center.copy(prev.p0).add(prev.p1).multiplyScalar(0.5);
 			d.copy(center).sub(baseFrame.center).normalize();
 			var a = d.dot(d);
 			for (var i = 0; i < N_SEGS + 1; i++) {
 				var v = geo.vertices[i];
-				p.copy(v).projectOnLineSeg(prev.lopoint, prev.hipoint);
-				var t = p.inverseLerp(prev.lopoint, prev.hipoint);
-				var radius = lerp(prev.loradius, prev.hiradius, t);
+				p.copy(v).projectOnLineSeg(prev.p0, prev.p1);
+				var t = p.inverseLerp(prev.p0, prev.p1);
+				var radius = lerp(prev.r0, prev.r1, t);
 				var r2 = radius * radius;
 				var vmp = p.negate().add(v);	// p <- (v - p)
 				var b = 2*d.dot(vmp);
@@ -192,7 +192,9 @@ var tree = function() {
 			m.makePivot(endFrame.forward, theta, ct);
 			m1.makePivot(endFrame.forward, theta, endFrame.center);
 			var cbf = endFrame.up.clone().multiplyScalar(rt).add(ct).applyMatrix4(m);
-			var upbf = endFrame.up.clone().multiplyScalar(endFrame.radius).add(endFrame.center).applyMatrix4(m1);
+			var upbf = endFrame.up.clone().multiplyScalar(endFrame.radius)
+				                  .add(endFrame.center).applyMatrix4(m1)
+				                  .sub(cbf).normalize();
 			var fwdbf = cbf.clone().sub(ct).normalize();
 			leftbf.copy(upbf).cross(fwdbf);
 			fwdbf.copy(leftbf).cross(upbf);
