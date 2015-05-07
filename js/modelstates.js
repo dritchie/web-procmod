@@ -143,6 +143,8 @@ var ModelStates = (function()
 
 		combine: function(other)
 		{
+			// We allow other to be undefined
+			if (other === undefined) return this;
 			var ns = new ModelStates.Compositional.Voxelizing(this.voxparams);
 			ns.geometry = this.geometry.combine(other.geometry);
 			// Only bother with combining grids / updating score if the two child
@@ -167,6 +169,11 @@ var ModelStates = (function()
 			var percentOutside = extralo.x + extralo.y + extralo.z + extrahi.x + extrahi.y + extrahi.z;
 			this.score = gaussianERP.score([1, vp.percentSameSigma], percentSame) +
 						 gaussianERP.score([0, vp.percentOutsideSigma], percentOutside);
+		},
+
+		getCompleteGeometry: function()
+		{
+			return this.geometry.clone();
 		}
 	};
 

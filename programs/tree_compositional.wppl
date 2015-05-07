@@ -42,21 +42,14 @@ var branch = function(origradius, frame, i, depth, prev) {
 				var bframeAndPrev = tree.branchFrame(splitframe, nextframe, 0.5, theta, branchradius);
 				var bframe = bframeAndPrev.frame;
 				var bprev = bframeAndPrev.prev;
-				return leafState.combine(
-					branch(origradius, bframe, 0, depth + 1, bprev)
-				);
+				var recurse = branch(origradius, bframe, 0, depth + 1, bprev);
+				return leafState.combine(recurse);
 			} else return leafState;
 		})();
 
 		// Keep generating same branch?
-		// return flip(tree.continueProb(i))
-		// 	?
-		// 	branchState.combine(branch(origradius, nextframe, i + 1, depth, null))
-		// 	:
-		// 	branchState;
 		if (flip(tree.continueProb(i))) {
 			var recurse = branch(origradius, nextframe, i + 1, depth, null);
-			display(recurse);
 			return branchState.combine(recurse);
 		} else {
 			return branchState;
@@ -73,9 +66,9 @@ var generate = function() {
 		radius: uniformrel(1.5, 2),
 		v: 0
 	};
-	var model = branch(startframe.radius, startframe, 0, 0, null);
-	factor(model.score);
-	return model;
+	var modelstate = branch(startframe.radius, startframe, 0, 0, null);
+	factor(modelstate.score);
+	return modelstate;
 };
 
 
