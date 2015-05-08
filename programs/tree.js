@@ -104,9 +104,10 @@ var tree = function() {
 		var center = new THREE.Vector3();
 		var d = new THREE.Vector3();
 		var p = new THREE.Vector3();
-		return function (geo, baseFrame, prev) {
+		var offset = new THREE.Vector3();
+		return function (geo, frame, prev) {
 			center.copy(prev.p0).add(prev.p1).multiplyScalar(0.5);
-			d.copy(center).sub(baseFrame.center).normalize();
+			d.copy(center).sub(frame.center).normalize();
 			var a = d.dot(d);
 			for (var i = 0; i < N_SEGS + 1; i++) {
 				var v = geo.vertices[i];
@@ -121,7 +122,7 @@ var tree = function() {
 				if (disc < 0) disc = 0;
 				disc = Math.sqrt(disc);
 				var rayt = (-b - disc) / (2*a);
-				v.add(d.multiplyScalar(rayt));
+				v.add(offset.copy(d).multiplyScalar(rayt));
 			}
 		};
 	}();
