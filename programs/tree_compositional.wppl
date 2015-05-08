@@ -42,14 +42,16 @@ var branch = function(origradius, frame, i, depth, prev) {
 				var bframeAndPrev = tree.branchFrame(splitframe, nextframe, 0.5, theta, branchradius);
 				var bframe = bframeAndPrev.frame;
 				var bprev = bframeAndPrev.prev;
-				var recurse = branch(origradius, bframe, 0, depth + 1, bprev);
+				// var recurse = branch(origradius, bframe, 0, depth + 1, bprev);
+				var recurse = incrementalize(branch, [origradius, bframe, 0, depth + 1, bprev]);
 				return leafState.combine(recurse);
 			} else return leafState;
 		})();
 
 		// Keep generating same branch?
 		if (flip(tree.continueProb(i))) {
-			var recurse = branch(origradius, nextframe, i + 1, depth, null);
+			// var recurse = branch(origradius, nextframe, i + 1, depth, null);
+			var recurse = incrementalize(branch, [origradius, nextframe, i + 1, depth, null]);
 			return branchState.combine(recurse);
 		} else {
 			return branchState;
@@ -66,7 +68,8 @@ var generate = function() {
 		radius: uniformrel(1.5, 2),
 		v: 0
 	};
-	var modelstate = branch(startframe.radius, startframe, 0, 0, null);
+	// var modelstate = branch(startframe.radius, startframe, 0, 0, null);
+	var modelstate = incrementalize(branch, [startframe.radius, startframe, 0, 0, null]);
 	factor(modelstate.score);
 	return modelstate;
 };
@@ -75,8 +78,9 @@ var generate = function() {
 // ----------------------------------------------------------------------------
 
 
-// var N = 1000;
-var N = 1;
-return MH(generate, N, false, true);
+var N = 2000;
+// var N = 1;
+// return HashMH(generate, N, false, true, true);
+return IncrementalMH(generate, N, false, true, true);
 
 

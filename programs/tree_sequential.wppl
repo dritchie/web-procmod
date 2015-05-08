@@ -78,8 +78,8 @@ var generate = function() {
 // ----------------------------------------------------------------------------
 
 
-// var N = 1000;
-var N = 1;
-return MH(generate, N, false, true);
+var N = 1000;
+// var N = 1;
+return HashMH(generate, N, false, true, true);
 
 
