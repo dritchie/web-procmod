@@ -108,9 +108,6 @@ var ModelStates = (function()
 
 	// ------------------------------------------------------------------------
 
-	// TODO: Could possibly be made more efficient by maintaining a chain/tree
-	//    of states, as above.
-
 	ModelStates.Compositional.Voxelizing = function(voxparams)
 	{
 		this.geometry = null;
@@ -118,6 +115,7 @@ var ModelStates = (function()
 		this.bbox = null;
 		this.score = -Infinity;
 		this.voxparams = voxparams;
+		this.children = null;
 	}
 
 	// Voxparams has:
@@ -146,17 +144,50 @@ var ModelStates = (function()
 			// We allow other to be undefined
 			if (other === undefined) return this;
 			var ns = new ModelStates.Compositional.Voxelizing(this.voxparams);
-			ns.geometry = this.geometry.combine(other.geometry);
-			// Only bother with combining grids / updating score if the two child
-			//   scores are both > -Infinity and they don't intersect each other.
-			if (this.score > -Infinity && other.score > -Infinity &&
-				!this.geometry.intersects(other.geometry))
+			ns.children = [ this, other ];
+			// Only bother with combining grids / updating score if
+			//    both scores > -Infinity and no intersections
+			if (this.score > -Infinity && other.score > -Infinity
+				&& !this.intersects(other))
 			{
 				ns.grid = this.grid.union(other.grid);
 				ns.bbox = this.bbox.clone().union(other.bbox);
 				ns.updateScore();
 			}
 			return ns;
+		},
+
+		intersects: function(other)
+		{
+			// Test outer bboxes first
+			if (!other.bbox.isIntersectionBox(this.bbox))
+				return false;
+			// If other is not a leaf, check children
+			if (other.children !== null)
+			{
+				for (var i = 0; i < other.children.length; i++)
+				{
+					if (this.intersects(other.children[i]))
+						return true;
+				}
+				return false;
+			}
+			// If other is a leaf, then:
+			// If this is not a leaf, check against its children
+			else if (this.children !== null)
+			{
+				for (var i = 0; i < this.children.length; i++)
+				{
+					if (this.children[i].intersects(other))
+						return true;
+				}
+				return false;
+			}
+			// If this is a leaf, do direct geo-geo comparison
+			else
+			{
+				return this.geometry.intersects(other.geometry);
+			}
 		},
 
 		updateScore: function()
@@ -173,7 +204,22 @@ var ModelStates = (function()
 
 		getCompleteGeometry: function()
 		{
-			return this.geometry.clone();
+			// Recursively accumulate geometry until we get 
+			//    to the leaves.
+			var geo = new Geo.Geometry();
+			var stack = [this];
+			while (stack.length > 0)
+			{
+				var state = stack.pop();
+				if (state.geometry !== null)
+					geo.merge(state.geometry)
+				else
+				{
+					for (var i = 0; i < state.children.length; i++)
+						stack.push(state.children[i]);
+				}
+			}
+			return geo;
 		}
 	};
 
