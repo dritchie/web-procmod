@@ -223,7 +223,7 @@ var Geo = (function() {
 	// Intersection testing
 
 	Geo.Geometry.prototype.intersects = (function() {
-		var FUDGE_FACTOR = 1e-3;
+		var FUDGE_FACTOR = 1e-10;
 		var thistribbox = new THREE.Box3();
 		var othertribbox = new THREE.Box3();
 		return function (othergeo)
@@ -263,7 +263,7 @@ var Geo = (function() {
 
 	// Find all the triangles involved in intersections between this and other.
 	Geo.Geometry.prototype.intersectionGeo = (function() {
-		var FUDGE_FACTOR = 1e-3;
+		var FUDGE_FACTOR = 1e-10;
 		var thistribbox = new THREE.Box3();
 		var othertribbox = new THREE.Box3();
 		return function (othergeo)

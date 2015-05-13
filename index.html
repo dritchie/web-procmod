@@ -31,6 +31,7 @@
 			var scene, camera, renderer, materials, controls;
 			var compiledProgram;
 			var guistate, gui;
+			var gui_target = null;
 			var gui_sample = null, gui_score = null, gui_generation = null;
 			var gui_showbestingen = null, gui_showbestoverall = null;
 			var model = null;
@@ -42,13 +43,10 @@
 			var sampmodels = null;
 			var bestidx_ingen = 0;
 			var bestidx_overall_gen = 0, bestidx_overall_samp = 0;
+			var curridx = 0;
 
 			var voxparams =
 			{
-				// percentSameSigma: 0.02,
-				// percentOutsideSigma: 0.02,
-				// percentSameSigma: 0.01,
-				// percentOutsideSigma: 0.01,
 				percentSameSigma: 0.005,
 				percentOutsideSigma: 0.005,
 				size: 0.25,
@@ -56,12 +54,16 @@
 				targetGrid: new Grids.BinaryGrid3()
 			};
 
-			var targetMeshFile = "targets/shipProxy2.obj";
-			// var codeFile = "programs/spaceship_sequential.wppl";
-			var codeFile = "programs/spaceship_compositional.wppl";
+			// var targetMeshFile = "targets/shipProxy2.obj";
+			// // var codeFile = "programs/spaceship_sequential.wppl";
+			// var codeFile = "programs/spaceship_compositional.wppl";
+
 			// var targetMeshFile = "targets/treeProxy5.obj";
-			// // var codeFile = "programs/tree_sequential.wppl";
-			// var codeFile = "programs/tree_compositional.wppl";
+			// var targetMeshFile = "targets/treeProxy_long_2.obj";
+			// var targetMeshFile = "targets/treeProxy7.obj";
+			var targetMeshFile = "targets/treeProxy8.obj";
+			// var codeFile = "programs/tree_sequential.wppl";
+			var codeFile = "programs/tree_compositional.wppl";
 
 			// Substitute for 'new' that is valid in WebPPL code
 			// (Some people say you should never modify the prototype Object. I like to live dangerously).
@@ -104,6 +106,8 @@
 
 					var t1 = performance.now();
 					console.log("Time: ", (t1-t0)/1000.0);
+
+					gui_target.setValue(false);
 
 					// Set up arrays of samples / THREE.js models for those samples
 					// Populate the model arrays with nulls, then generate them on demand
@@ -214,6 +218,7 @@
 			{
 				if (samps.length > 0)
 				{
+					curridx = i;
 					var samp = samps[i];
 					// Compute and cache THREE.Model objects for each sample
 					if (sampmodels[i] === null)
@@ -344,7 +349,7 @@
 					voxparams.bounds.expandByScalar(0.1);
 					voxparams.targetGrid.clearall();
 					mygeom.voxelize(voxparams.targetGrid, voxparams.bounds, voxparams.size, true);
-					gui.add(guistate, "showTarget").name("show target").onChange(toggle_target);
+					gui_target = gui.add(guistate, "showTarget").name("show target").onChange(toggle_target);
 					console.log("Target grid ready.")
 
 					// Load WebPPL procedural modeling code

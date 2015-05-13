@@ -320,6 +320,8 @@ var generate = function()
 var N = 300;
 // var N = 1000;
 // return MH(generate, N, false, true);
+// return HashMH(generate, N, false, false, true);
+// return IncrementalMH(generate, N, 0, false, true);
 return ParticleFilter(generate, N, true, true, true);
 
 

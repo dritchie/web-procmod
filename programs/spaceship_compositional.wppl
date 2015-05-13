@@ -234,7 +234,8 @@ var addWings = function(i, xbase, zlo, zhi)
 	var zbase = rets.zbase;
 	var state = rets.state;
 	if (flip(wi(i, 0.6)))
-		return state.combine(addWings(i+1, xbase+xlen, zbase-0.5*zlen, zbase+0.5*zlen));
+		// return state.combine(addWings(i+1, xbase+xlen, zbase-0.5*zlen, zbase+0.5*zlen));
+		return state.combine(incrementalize(addWings, [i+1, xbase+xlen, zbase-0.5*zlen, zbase+0.5*zlen]));
 	else return state;
 }
 
@@ -247,7 +248,8 @@ var addFin = function(i, ybase, zlo, zhi, xmax)
 	var geo = Geo.Shapes.Box(0, ybase + 0.5*ylen, zbase, xlen, ylen, zlen);
 	var state = newState(geo);
 	if (flip(wi(i, 0.2)))
-		return state.combine(addFin(i+1, ybase+ylen, zbase-0.5*zlen, zbase+0.5*zlen, xlen));
+		// return state.combine(addFin(i+1, ybase+ylen, zbase-0.5*zlen, zbase+0.5*zlen, xlen));
+	return state.combine(incrementalize(addFin, [i+1, ybase+ylen, zbase-0.5*zlen, zbase+0.5*zlen, xlen]));
 	else return state;
 }
 
@@ -265,7 +267,8 @@ var addBody = function(i, rearz, prev)
 	var wingstate = (function()
 	{
 		if (flip(wingprob))
-			return bodystate.combine(addWings(0, 0.5*xlen, rearz+0.5, rearz+zlen-0.5));
+			// return bodystate.combine(addWings(0, 0.5*xlen, rearz+0.5, rearz+zlen-0.5));
+			return bodystate.combine(incrementalize(addWings, [0, 0.5*xlen, rearz+0.5, rearz+zlen-0.5]));
 		else return bodystate;
 	})();
 	// Gen fin?
@@ -273,14 +276,16 @@ var addBody = function(i, rearz, prev)
 	var finstate = (function()
 	{
 		if (flip(finprob))
-			return wingstate.combine(addFin(0, 0.5*ylen, rearz, rearz+zlen, 0.6*xlen));
+			// return wingstate.combine(addFin(0, 0.5*ylen, rearz, rearz+zlen, 0.6*xlen));
+			return wingstate.combine(incrementalize(addFin, [0, 0.5*ylen, rearz, rearz+zlen, 0.6*xlen]));
 		else return wingstate;
 	})();
 	// Continue generating?
 	var nextprev = {type: bodyType, xlen: xlen, ylen: ylen};
 	if (flip(wi(i, 0.4)))
 	{
-		return finstate.combine(addBody(i+1, rearz+zlen, nextprev));
+		// return finstate.combine(addBody(i+1, rearz+zlen, nextprev));
+		return finstate.combine(incrementalize(addBody, [i+1, rearz+zlen, nextprev]));
 	}
 	else
 	{	
@@ -293,7 +298,8 @@ var addBody = function(i, rearz, prev)
 
 var generate = function()
 {
-	var modelstate = addBody(0, -5, {type: null, xlen: 0, ylen: 0});
+	// var modelstate = addBody(0, -5, {type: null, xlen: 0, ylen: 0});
+	var modelstate = incrementalize(addBody, [0, -5, {type: null, xlen: 0, ylen: 0}]);
 	factor(modelstate.score);
 	return modelstate;
 }
@@ -303,7 +309,8 @@ var generate = function()
 
 // var N = 1;
 var N = 1000;
-return HashMH(generate, N, false, false, true);
+// return HashMH(generate, N, false, false, true);
+return IncrementalMH(generate, N, 0, false, true);
 
 
 
