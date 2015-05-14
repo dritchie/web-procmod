@@ -124,11 +124,11 @@ var addBoxBodySeg = function(rearz, prev)
 {
 	// Must be bigger than the previous segment, if the previous
 	//   segment was not a box (i.e. was a cylinder-type thing)
-	var xl = uniformrel(1, 3);
-	var yl = uniformrel(.5, 1) * xl;
+	var xl = uniform(1, 3);
+	var yl = uniform(.5, 1) * xl;
 	var xlen = (prev.type === BodyType.Box) ? xl : Math.max(xl, prev.xlen);
 	var ylen = (prev.type === BodyType.Box) ? yl : Math.max(yl, prev.ylen);
-	var zlen = uniformrel(2, 5);
+	var zlen = uniform(2, 5);
 	var geo = Geo.Shapes.Box(0, 0, rearz + 0.5*zlen, xlen, ylen, zlen);
 	var state = newState(geo);
 	return { state: state, xlen: xlen, ylen: ylen, zlen: zlen, type: BodyType.Box };
@@ -143,8 +143,8 @@ var addCylinderBodySeg = function(rearz, prev, isnose)
 	var radius = uniformrel(minrad, maxrad);
 	var xlen = radius*2;
 	var ylen = radius*2;
-	var zlen = isnose ? uniformrel(1, 3) : uniformrel(2, 5);
-	var geo = isnose ? BodyCylinder(rearz, zlen, radius, radius*uniformrel(.25, .75))
+	var zlen = isnose ? uniform(1, 3) : uniform(2, 5);
+	var geo = isnose ? BodyCylinder(rearz, zlen, radius, radius*uniform(.25, .75))
 					 : BodyCylinder(rearz, zlen, radius);
 	var state = newState(geo);
 	return { state: state, xlen: xlen, ylen: ylen, zlen: zlen, type: BodyType.Cylinder };
@@ -159,7 +159,7 @@ var addClusterBodySeg = function(rearz, prev, isnose)
 	var radius = uniformrel(minrad, maxrad);
 	var xlen = radius*4;
 	var ylen = radius*4;
-	var zlen = uniformrel(2, 5);
+	var zlen = uniform(2, 5);
 	var geo = BodyCluster(rearz, zlen, radius);
 	var state = newState(geo);
 	return { state: state, xlen: xlen, ylen: ylen, zlen: zlen, type: BodyType.Cluster };
@@ -180,9 +180,9 @@ var addBodySeg = function(rearz, prev)
 var addBoxWingSeg = function(xbase, zlo, zhi)
 {
 	var zbase = uniformrel(zlo, zhi);
-	var xlen = uniformrel(0.25, 2.0);
-	var ylen = uniformrel(0.25, 1.25);
-	var zlen = uniformrel(0.5, 4.0);
+	var xlen = uniform(0.25, 2.0);
+	var ylen = uniform(0.25, 1.25);
+	var zlen = uniform(0.5, 4.0);
 	var geo = WingBoxes(xbase, zbase, xlen, ylen, zlen);
 	var state = newState(geo);
 	var gunstate = (function()
@@ -196,7 +196,7 @@ var addBoxWingSeg = function(xbase, zlo, zhi)
 
 var addWingGuns = function(xbase, zbase, xlen, ylen, zlen)
 {
-	var gunlen = uniformrel(1, 1.2)*zlen;
+	var gunlen = uniform(1, 1.2)*zlen;
 	var gunxbase = xbase + 0.5*xlen;
 	var gunybase = 0.5*ylen;
 	var geo = WingGuns(gunxbase, gunybase, zbase, gunlen);
@@ -209,7 +209,7 @@ var addCylinderWingSeg = function(xbase, zlo, zhi)
 	var radius = uniform(.15, .7);
 	var xlen = 2*radius;
 	var ylen = 2*radius;
-	var zlen = uniformrel(1, 5);
+	var zlen = uniform(1, 5);
 	var geo = WingCylinders(xbase, zbase, zlen, radius);
 	var state = newState(geo);
 	return { state: state, xlen: xlen, ylen: ylen, zlen: zlen, zbase: zbase };
@@ -241,9 +241,9 @@ var addWings = function(i, xbase, zlo, zhi)
 
 var addFin = function(i, ybase, zlo, zhi, xmax)
 {
-	var xlen = uniformrel(0.5, 1.0) * xmax;
-	var ylen = uniformrel(0.1, 0.5);
-	var zlen = uniformrel(0.5, 1.0) * (zhi - zlo);
+	var xlen = uniform(0.5, 1.0) * xmax;
+	var ylen = uniform(0.1, 0.5);
+	var zlen = uniform(0.5, 1.0) * (zhi - zlo);
 	var zbase = 0.5*(zlo + zhi);
 	var geo = Geo.Shapes.Box(0, ybase + 0.5*ylen, zbase, xlen, ylen, zlen);
 	var state = newState(geo);

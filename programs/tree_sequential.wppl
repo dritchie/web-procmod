@@ -14,11 +14,6 @@ var addGeometry = function(geo) {
 	factor(score);
 };
 
-var uniformrel = function(lo, hi) {
-	var u = uniform(0, 1);
-	return (1-u)*lo + u*hi;
-};
-
 
 // ----------------------------------------------------------------------------
 
@@ -29,8 +24,8 @@ var branch = function(origradius, frame, i, depth, prev) {
 	if (frame.radius / origradius >= 0.1) {
 		var uprot = gaussian(0, Math.PI / 12);
 		var leftrot = gaussian(0, Math.PI / 12);
-		var len = uniformrel(3, 5) * frame.radius;
-		var endradius = uniformrel(0.7, 0.9) * frame.radius;
+		var len = uniform(3, 5) * frame.radius;
+		var endradius = uniform(0.7, 0.9) * frame.radius;
 
 		// Figure out where to split the segment
 		// (This is so the part we branch from is a pure conic section)
@@ -47,7 +42,7 @@ var branch = function(origradius, frame, i, depth, prev) {
 			var theta = gaussian(thetaMuSigma[0], thetaMuSigma[1]);
 			var maxbranchradius = tmp.copy(nextframe.center).sub(splitframe.center)
 			                         .multiplyScalar(0.5).length();
-			var branchradius = Math.min(uniformrel(0.9, 1) * nextframe.radius, maxbranchradius);
+			var branchradius = Math.min(uniform(0.9, 1) * nextframe.radius, maxbranchradius);
 			var bframeAndPrev = tree.branchFrame(splitframe, nextframe, 0.5, theta, branchradius);
 			var bframe = bframeAndPrev.frame;
 			var bprev = bframeAndPrev.prev;
@@ -67,7 +62,7 @@ var generate = function() {
 		center: Object.new(THREE.Vector3, 0, 0, 0),
 		forward: Object.new(THREE.Vector3, 0, 1, 0),
 		up: Object.new(THREE.Vector3, 0, 0, -1),
-		radius: uniformrel(1.5, 2),
+		radius: uniform(1.5, 2),
 		v: 0
 	};
 	branch(startframe.radius, startframe, 0, 0, null);
