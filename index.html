@@ -9,9 +9,9 @@
 		<!-- <script src="lib/codemirror/codemirror-compressed.js"></script> -->
 		<script src="lib/jquery-2.1.3.min.js"></script>
 		<script src="lib/three/three.min.js"></script>
-		<!-- // <script src="lib/three/three.js"></script> -->
 		<script src="lib/three/OrbitControls.js"></script>
 		<script src="lib/three/OBJLoader.js"></script>
+		<script src="lib/three/OBJExporter.js"></script>
 		<script src="lib/dat.gui.min.js"></script>
 		<script src="lib/webppl/webppl.min.js"></script>
 		<script src="js/geometry.js"></script>
@@ -34,6 +34,7 @@
 			var gui_target = null;
 			var gui_sample = null, gui_score = null, gui_generation = null;
 			var gui_showbestingen = null, gui_showbestoverall = null;
+			var gui_export = null;
 			var model = null;
 			var targetmodel = null;
 
@@ -231,6 +232,9 @@
 						var geo = value.getCompleteGeometry().toThreeGeo();
 						sampmodels[i] = new THREE.SceneUtils.createMultiMaterialObject(geo, materials);
 					}
+					// Create the 'export obj' button, if it doesn't yet exist
+					if (gui_export === null)
+						gui_export = gui.add(guistate, "exportOBJ").name("export OBJ");
 					scene.remove(scene.children[scene.children.length-1]);
 					model = sampmodels[i];
 					scene.add(model);
@@ -267,6 +271,14 @@
 						scene.add(new THREE.Object3D());
 				}
 				render();
+			}
+
+			function exportOBJ()
+			{
+				console.log("Exporting sample", curridx);
+				var exporter = new THREE.OBJExporter();
+				var str = exporter.parse(sampmodels[curridx].children[0]);
+				console.log(str);
 			}
 
 			function init()
@@ -314,6 +326,7 @@
 					generate: generate,
 					showBestInGen: show_best_in_generation,
 					showBestOverall: show_best_overall,
+					exportOBJ: exportOBJ,
 					showTarget: false,
 					score: 0,
 					generationIndex: 0,

@@ -2,6 +2,7 @@
 var tree = function() {
 
 	var N_SEGS = 10;
+	// var N_SEGS = 14;
 	var OUTRADIUS_FACTOR = Math.cos(Math.PI/N_SEGS);
 	var worldup = new THREE.Vector3(0, 1, 0);
 	var WORLD_TO_TEX = 0.15

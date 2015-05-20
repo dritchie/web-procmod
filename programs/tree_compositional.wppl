@@ -77,6 +77,7 @@ var N = 1000;
 // var N = 1;
 // return MH(generate, N, true, true);
 // return HashMH(generate, N, false, true, true);
+// return HashMH(generate, N, true, true, true);
 return IncrementalMH(generate, N, 0, true, true);
 
 
