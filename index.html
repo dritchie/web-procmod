@@ -63,6 +63,8 @@
 			// var targetMeshFile = "targets/treeProxy_long_2.obj";
 			// var targetMeshFile = "targets/treeProxy7.obj";
 			var targetMeshFile = "targets/treeProxy8.obj";
+			// var targetMeshFile = "targets/treeProxy9.obj";
+			// var targetMeshFile = "targets/treeProxy10.obj";
 			// var codeFile = "programs/tree_sequential.wppl";
 			var codeFile = "programs/tree_compositional.wppl";
 
@@ -368,7 +370,7 @@
 					// Load WebPPL procedural modeling code
 					$.get(codeFile, function (code)
 					{
-						var compiledCode = webppl.compile("(function(){" + code + "})()", true);
+						var compiledCode = webppl.compile("(function(){" + code + "})()", true, true);
 						// console.log(compiledCode);
 						compiledProgram = eval(compiledCode);
 						gui.add(guistate, "generate");

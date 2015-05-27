@@ -309,8 +309,8 @@ var generate = function()
 
 // var N = 1;
 var N = 1000;
-// return HashMH(generate, N, false, false, true);
-return IncrementalMH(generate, N, 0, false, true);
+// return HashMH(generate, N, {justSample: true});
+return IncrementalMH(generate, N, {justSample: true});
 
 
 

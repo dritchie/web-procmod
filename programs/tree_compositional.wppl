@@ -8,10 +8,13 @@ var newState = function(geo) {
 
 // ----------------------------------------------------------------------------
 
+// var stopThresh = 0.1;
+var stopThresh = 0.05;
+
 var tmp = Object.new(THREE.Vector3);
 var branch = function(origradius, frame, i, depth, prev) {
 	// Only generate stuff if it's not too small to matter
-	if (frame.radius / origradius >= 0.1) {
+	if (frame.radius / origradius >= stopThresh) {
 		var uprot = gaussian(0, Math.PI / 12);
 		var leftrot = gaussian(0, Math.PI / 12);
 		var len = uniform(3, 5) * frame.radius;
@@ -73,11 +76,12 @@ var generate = function() {
 // ----------------------------------------------------------------------------
 
 
-var N = 1000;
+var N = 2000;
 // var N = 1;
 // return MH(generate, N, true, true);
-// return HashMH(generate, N, false, true, true);
-// return HashMH(generate, N, true, true, true);
-return IncrementalMH(generate, N, 0, true, true);
+// return HashMH(generate, N, {justSample: true, verbose: true, onlyMAP: true});
+// return HashMH(generate, N, {justSample: true, verbose: true, doFullRerun: true, onlyMAP: true});
+return IncrementalMH(generate, N, {justSample: true, verbose: true, onlyMAP: true});
+// return IncrementalMH(generate, N, {justSample: true, verbose: true, onlyMAP: true, dontAdapt: true});
 
 
