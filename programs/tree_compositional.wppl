@@ -81,7 +81,8 @@ var N = 2000;
 // return MH(generate, N, true, true);
 // return HashMH(generate, N, {justSample: true, verbose: true, onlyMAP: true});
 // return HashMH(generate, N, {justSample: true, verbose: true, doFullRerun: true, onlyMAP: true});
-return IncrementalMH(generate, N, {justSample: true, verbose: true, onlyMAP: true});
+// return IncrementalMH(generate, N, {justSample: true, verbose: true, onlyMAP: true});
 // return IncrementalMH(generate, N, {justSample: true, verbose: true, onlyMAP: true, dontAdapt: true});
+return IncrementalMH(generate, N, {justSample: true, verbose: true, onlyMAP: true, dontAdapt: true, doFullRerun: true});
 
 
