@@ -55,18 +55,18 @@
 				targetGrid: new Grids.BinaryGrid3()
 			};
 
-			// var targetMeshFile = "targets/shipProxy2.obj";
-			// // var codeFile = "programs/spaceship_sequential.wppl";
+			var targetMeshFile = "targets/shipProxy2.obj";
+			var codeFile = "programs/spaceship_sequential.wppl";
 			// var codeFile = "programs/spaceship_compositional.wppl";
 
-			// var targetMeshFile = "targets/treeProxy5.obj";
-			// var targetMeshFile = "targets/treeProxy_long_2.obj";
-			// var targetMeshFile = "targets/treeProxy7.obj";
-			var targetMeshFile = "targets/treeProxy8.obj";
-			// var targetMeshFile = "targets/treeProxy9.obj";
-			// var targetMeshFile = "targets/treeProxy10.obj";
-			// var codeFile = "programs/tree_sequential.wppl";
-			var codeFile = "programs/tree_compositional.wppl";
+			// // var targetMeshFile = "targets/treeProxy5.obj";
+			// // var targetMeshFile = "targets/treeProxy_long_2.obj";
+			// // var targetMeshFile = "targets/treeProxy7.obj";
+			// var targetMeshFile = "targets/treeProxy8.obj";
+			// // var targetMeshFile = "targets/treeProxy9.obj";
+			// // var targetMeshFile = "targets/treeProxy10.obj";
+			// // var codeFile = "programs/tree_sequential.wppl";
+			// var codeFile = "programs/tree_compositional.wppl";
 
 			// Substitute for 'new' that is valid in WebPPL code
 			// (Some people say you should never modify the prototype Object. I like to live dangerously).
@@ -280,7 +280,13 @@
 				console.log("Exporting sample", curridx);
 				var exporter = new THREE.OBJExporter();
 				var str = exporter.parse(sampmodels[curridx].children[0]);
-				console.log(str);
+				// console.log(str);
+				var link = document.createElement('a');
+				link.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(str);
+				link.download = 'procmod.obj';
+				var e = document.createEvent('MouseEvents');
+				e.initEvent('click', true, true);
+				link.dispatchEvent(e);
 			}
 
 			function init()
