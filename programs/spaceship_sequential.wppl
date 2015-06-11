@@ -320,6 +320,7 @@ var generate = function()
 var N = 300;
 // var N = 1000;
 // return MH(generate, N, {justSample: true});
+// setFuturePolicy('deterministic');
 return ParticleFilter(generate, N, {justSample: true});
 
 

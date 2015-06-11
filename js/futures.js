@@ -1,6 +1,6 @@
 
 // Stochastic ordering
-function future(s, k, a, fn)
+function sfuture(s, k, a, fn)
 {
 	if (s.__futures === undefined)
 		s.__futures = [];
@@ -14,11 +14,25 @@ function future(s, k, a, fn)
 	return k(s, future);
 }
 
-// // Deterministic, depth-first ordering
-// function future(s, k, a, fn)
-// {
-// 	return fn(s, k, a);
-// }
+// Deterministic, depth-first ordering
+function dfuture(s, k, a, fn)
+{
+	return fn(s, k, a);
+}
+
+// We default to using stochastic futures
+future = sfuture;
+
+// Switch what type of future is being used
+function setFuturePolicy(s, k, a, policyname) {
+	if (policyname == 'stochastic') {
+		future = sfuture;
+	} else if (policyname == 'deterministic') {
+		future = dfuture;
+	} else
+		throw 'Unknown future policy ' + policyname;
+	return k(s);
+}
 
 function force(s, k, a, future)
 {
