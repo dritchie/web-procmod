@@ -39,6 +39,7 @@ var Verbose = (function() {
 	// i: Current iteration
 	// n: Number of iterations to run in total.
 	// k: continuation (resumes MH)
+	var period = 10;
 	function verboseMH(i, n, k) {
 		if (mh === null)
 			createDialogMH();
@@ -61,10 +62,14 @@ var Verbose = (function() {
 
 		// Invoke continuation k once display has finished updating.
 		// This will break the trampoline loop, so we have to restart it.
-		window.setTimeout(function() {
-			trampoline = k();
-			while(trampoline) trampoline = trampoline();
-		});
+		if (i % period === 0) {
+			window.setTimeout(function() {
+				trampoline = k();
+				while(trampoline) trampoline = trampoline();
+			});
+		} else {
+			return k();
+		}
 	}
 
 	return {
