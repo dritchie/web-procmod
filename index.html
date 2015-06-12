@@ -7,7 +7,9 @@
 		</style>
 		<!-- <link rel="stylesheet" href="lib/codemirror/codemirror.css"> -->
 		<!-- <script src="lib/codemirror/codemirror-compressed.js"></script> -->
+		<link rel="stylesheet" href="lib/jquery-ui-1.11.4.custom/jquery-ui.min.css"></script>
 		<script src="lib/jquery-2.1.3.min.js"></script>
+		<script src="lib/jquery-ui-1.11.4.custom/jquery-ui.min.js"></script>
 		<script src="lib/three/three.min.js"></script>
 		<script src="lib/three/OrbitControls.js"></script>
 		<script src="lib/three/OBJLoader.js"></script>
@@ -19,6 +21,7 @@
 		<script src="js/grids.js"></script>
 		<script src="js/intersection.js"></script>
 		<script src="js/futures.js"></script>
+		<script src="js/verbose.js"></script>
 		<script src="programs/tree.js"></script>
 	</head>
 	<body>
@@ -54,6 +57,11 @@
 				bounds: null,
 				targetGrid: new Grids.BinaryGrid3()
 			};
+
+			// var verbose = function(i, n, k) {
+			// 	console.log("Iteration " + i + "/" + n);
+			// 	return k();
+			// }
 
 			var targetMeshFile = "targets/shipProxy2.obj";
 			var codeFile = "programs/spaceship_sequential.wppl";
