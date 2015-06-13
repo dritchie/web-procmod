@@ -318,6 +318,7 @@ var generate = function()
 
 // return MH(generate, 1000, {justSample: true, verbose: Verbose.MH});
 // setFuturePolicy('deterministic');
+setFuturePolicy('stochastic');
 return ParticleFilter(generate, 300, {justSample: true, verbose: Verbose.SMC});
 
 

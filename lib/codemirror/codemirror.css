@@ -4,6 +4,8 @@
   /* Set height, width, borders, and global font properties here */
   font-family: monospace;
   height: 300px;
+
+  height: auto;
 }
 .CodeMirror-scroll {
   /* Set scrolling behaviour here */
@@ -176,7 +178,8 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {color: #f22;}
   border-width: 0;
   background: transparent;
   font-family: inherit;
-  font-size: inherit;
+  /*font-size: inherit;*/
+  font-size: 10pt;
   margin: 0;
   white-space: pre;
   word-wrap: normal;

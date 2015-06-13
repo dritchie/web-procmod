@@ -1,15 +1,16 @@
 <html>
 	<head>
-		<title>Procedural Modeling</title>
+		<title>Procedural Modeling with SOSMC</title>
 		<style>
 			body { margin: 0; }
 			canvas { width: 100%; height: 100% }
 		</style>
-		<!-- <link rel="stylesheet" href="lib/codemirror/codemirror.css"> -->
-		<!-- <script src="lib/codemirror/codemirror-compressed.js"></script> -->
+		<link rel="stylesheet" href="lib/codemirror/codemirror.css">
+		<script src="lib/codemirror/codemirror-compressed.js"></script>
 		<link rel="stylesheet" href="lib/jquery-ui-1.11.4.custom/jquery-ui.min.css"></script>
 		<script src="lib/jquery-2.1.3.min.js"></script>
 		<script src="lib/jquery-ui-1.11.4.custom/jquery-ui.min.js"></script>
+		<script src="js/codeeditor.js"></script>
 		<script src="lib/three/three.min.js"></script>
 		<script src="lib/three/OrbitControls.js"></script>
 		<script src="lib/three/OBJLoader.js"></script>
@@ -25,11 +26,6 @@
 		<script src="programs/tree.js"></script>
 	</head>
 	<body>
-<!-- 		<div>
-			<textarea id="code">
-				// This is a comment!
-			</textarea>
-		</div> -->
 		<script>
 			var scene, camera, renderer, materials, controls;
 			var compiledProgram;
@@ -49,21 +45,17 @@
 			var bestidx_overall_gen = 0, bestidx_overall_samp = 0;
 			var curridx = 0;
 
+			var codeEditor = null;
+			var code_toggle = null;
+
 			var voxparams =
 			{
 				percentSameSigma: 0.005,
 				percentOutsideSigma: 0.005,
-				// percentSameSigma: 0.05,
-				// percentOutsideSigma: 0.05,
 				size: 0.25,
 				bounds: null,
 				targetGrid: new Grids.BinaryGrid3()
 			};
-
-			// var verbose = function(i, n, k) {
-			// 	console.log("Iteration " + i + "/" + n);
-			// 	return k();
-			// }
 
 			var targetMeshFile = "targets/shipProxy2.obj";
 			var codeFile = "programs/spaceship_sequential.wppl";
@@ -109,6 +101,12 @@
 
 			function generate()
 			{
+				// Recompile, if need be
+				// TODO: Catch and report compiler errors
+				var newprog = codeEditor.compile();
+				if (newprog) compiledProgram = newprog;
+
+
 				var t0;
 
 				// Top-level continuation / callback that'll be invoked
@@ -184,6 +182,7 @@
 				}
 
 				// Run inference (and time it).
+				// TODO: Catch and report runtime errors
 				t0 = performance.now();
 				compiledProgram({}, doneK, "");
 			}
@@ -333,11 +332,14 @@
 				scene.add(new THREE.Object3D());
 
 				// Camera controls
-				controls = new THREE.OrbitControls( camera );
+				controls = new THREE.OrbitControls( camera , renderer.domElement);
 				controls.damping = 0.2;
 				controls.addEventListener( 'change', render );
 
 				// GUI
+				// window.addEventListener('keydown', function(e) {
+				// 	console.log(document.activeElement.type);
+				// });
 				gui = new dat.GUI();
 				guistate = 
 				{
@@ -351,18 +353,24 @@
 					sampleIndex: 0
 				}
 
+				// Code editor
+				codeEditor = CodeEditor.create();
+				code_toggle = gui.add(codeEditor, 'visible').name('show code');
+				code_toggle.onChange(function() {
+					if (codeEditor.visible)
+						codeEditor.open();
+					else
+						codeEditor.close();
+				});
+				codeEditor.setEventHandler('dialogclose', function() {
+					code_toggle.setValue(false);
+				});
+
 				// Resize event handler
 				window.addEventListener( 'resize', onWindowResize, false );
 
 				// Begin main event loop
 				animate();
-
-				// var editor = CodeMirror.fromTextArea(document.getElementById("code"),
-				// {
-				// 	lineNumbers: true,
-				// 	matchBrackets: true,
-				// 	autoCloseBrackets: true
-				// });
 
 				// Load target mesh
 				var loader = new THREE.OBJLoader();
@@ -381,16 +389,13 @@
 					voxparams.targetGrid.clearall();
 					mygeom.voxelize(voxparams.targetGrid, voxparams.bounds, voxparams.size, true);
 					gui_target = gui.add(guistate, "showTarget").name("show target").onChange(toggle_target);
+					gui_target.setValue(true);
 					console.log("Target grid ready.")
 
 					// Load WebPPL procedural modeling code
-					$.get(codeFile, function (code)
-					{
-						var compiledCode = webppl.compile("(function(){" + code + "})()", true, true);
-						// console.log(compiledCode);
-						compiledProgram = eval(compiledCode);
-						gui.add(guistate, "generate");
-					});		
+					codeEditor.loadCodeFromFile(codeFile, function() {
+						gui.add(guistate, 'generate');
+					});
 				});
 
 			}
