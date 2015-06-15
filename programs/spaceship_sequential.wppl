@@ -1,11 +1,12 @@
 
-// Generating / adding to model states
+// Create a new model state
 var newState = function()
 {
 	// Assume availability of global 'voxparams'
 	return ModelStates.Sequential.Voxelizing.create(voxparams);
 }
 
+// Add geometry to an existing model state
 var addGeometry = function(geo)
 {
 	var currstate = globalStore.modelState;
@@ -129,6 +130,8 @@ var WingGuns = function(xbase, ybase, zbase, length)
 
 
 // ----------------------------------------------------------------------------
+
+// Subroutines for random spaceship geometry generation.
 
 var addBoxBodySeg = function(rearz, prev)
 {
@@ -302,6 +305,9 @@ var addBody = function(i, rearz, prev)
 	});
 }
 
+// ----------------------------------------------------------------------------
+
+// This is the 'main' function of the program
 var generate = function()
 {
 	globalStore.modelState = newState();
@@ -316,10 +322,19 @@ var generate = function()
 
 // ----------------------------------------------------------------------------
 
-// setFuturePolicy('deterministic');
-// return MH(generate, 1000, {justSample: true, verbose: Verbose.MH});
+// Generate results using SOSMC
+// (Switch the future policy to 'deterministic' to use depth-first SMC)
 setFuturePolicy('stochastic');
 return ParticleFilter(generate, 300, {justSample: true, verbose: Verbose.SMC});
+
+// Comment out the above and uncomment the below to use Metropolis-Hastings instead
+//setFuturePolicy('deterministic');
+//return MH(generate, 1000, {justSample: true, verbose: Verbose.MH});
+
+
+
+
+
 
 
 
