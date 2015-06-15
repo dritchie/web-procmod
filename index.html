@@ -148,17 +148,17 @@
 						sampmodels = generations_models[generations_models.length-1];
 
 						// Update GUI with new generation control, if there's more than one generation
+						if (gui_generation !== null)
+							gui.remove(gui_generation);
+						if (gui_showbestoverall !== null)
+							gui.remove(gui_showbestoverall)
 						if (generations_samps.length > 1)
 						{
-							if (gui_generation !== null)
-								gui.remove(gui_generation);
 							guistate.generationIndex = generations_samps.length-1;
 							gui_generation = gui.add(guistate, "generationIndex", 0, generations_samps.length-1).step(1).name("generation #");
 							gui_generation.onChange(select_generation);
 
 							// Also add show best overall button
-							if (gui_showbestoverall !== null)
-								gui.remove(gui_showbestoverall)
 							gui_showbestoverall = gui.add(guistate, "showBestOverall").name("show best overall");
 							// Find the best scoring overall sample and store it
 							var bestscore = -Infinity;
