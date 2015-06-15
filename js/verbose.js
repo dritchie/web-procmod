@@ -1,38 +1,98 @@
 var Verbose = (function() {
 
-	var state = null;
+	var dialogstates = [];
 
-	function createDialog() {
-		state = {};
+	function createProgressDialog(name, title, width, hasCancel) {
+		width = width || 300;
+		hasCancel = hasCancel === undefined ? true : hasCancel;
+		var state = {};
+
+		var dialogname = name + '-dialog';
+		var infotextname = name + '-infotext';
+		var progressbarname = name + '-progressbar';
 
 		// Create HTML elements
 		state.dialog = document.createElement('div');
-		state.dialog.setAttribute('id', 'dialog');
+		state.dialog.setAttribute('id', dialogname);
 		$('body').append(state.dialog);
 
 		state.infotext = document.createElement('div');
-		state.infotext.setAttribute('id', 'infotext');
-		$('#dialog').append(state.infotext);
+		state.infotext.setAttribute('id', infotextname);
+		$('#' + dialogname).append(state.infotext);
 
 		state.progressbar = document.createElement('div');
-		state.progressbar.setAttribute('id', 'progressbar');
-		$('#dialog').append(state.progressbar);
+		state.progressbar.setAttribute('id', progressbarname);
+		$('#' + dialogname).append(state.progressbar);
+
+		function cancel() {
+			state.cancelled = true;
+		}
 
 		// Transform them into jquery-ui widgets
-		state.dialog = $('#dialog').dialog({
+		state.dialog = $('#' + dialogname).dialog({
+			dialogClass: 'no-close',
 			autoOpen: false,
 			closeOnEscape: false,
 			resizable: false,
 			draggable: false,
 			modal: true,
-			title: 'Generating...',
-			buttons: [{text: 'Cancel', click: cancel}]
+			title: title,
+			width: width,
+			buttons: hasCancel ? [{text: 'Cancel', click: cancel}] : []
 		});
-		state.infotext = $('#infotext');
-		state.progressbar = $('#progressbar').progressbar({});
+		state.infotext = $('#' + infotextname);
+		state.progressbar = $('#' + progressbarname).progressbar({});
 
-		function cancel() {
-			state.cancelled = true;
+		dialogstates.push(state);
+		return state;
+	}
+
+	function createErrorDialog(name, title, width) {
+		width = width || 300;
+		var state = {};
+
+		var dialogname = name + '-dialog';
+		var infotextname = name + '-infotext';
+
+		// Create HTML elements
+		state.dialog = document.createElement('div');
+		state.dialog.setAttribute('id', dialogname);
+		$('body').append(state.dialog);
+
+		state.infotext = document.createElement('div');
+		state.infotext.setAttribute('id', infotextname);
+		$('#' + dialogname).append(state.infotext);
+
+		function ok() {
+			state.dialog.dialog('close');
+		}
+
+		// Transform them into jquery-ui widgets
+		state.dialog = $('#' + dialogname).dialog({
+			dialogClass: 'no-close',
+			autoOpen: false,
+			closeOnEscape: false,
+			resizable: false,
+			draggable: false,
+			modal: true,
+			title: title,
+			width: width,
+			buttons: [{text: 'OK', click: ok}]
+		});
+		state.infotext = $('#' + infotextname);
+
+		dialogstates.push(state);
+		return state;
+	}
+
+	function wrapWithRuntimeCheck(thunk) {
+		try {
+			thunk();
+		} catch (e) {
+			// Hide all other dialogs before showing the runtime error one.
+			for (var i = 0; i < dialogstates.length; i++)
+				dialogstates[i].dialog.dialog('close');
+			runtimeError(e.message);
 		}
 	}
 
@@ -40,33 +100,35 @@ var Verbose = (function() {
 	// n: Number of iterations to run in total.
 	// k: continuation (resumes MH)
 	var period = 10;
-	function verboseMH(i, n, k) {
-		if (state === null)
-			createDialog();
-		state.dialog.dialog('option', 'width', 300);
-		state.dialog.dialog('open');
+	var mhstate = null;
+	function mhProgress(i, n, k) {
+		if (mhstate === null)
+			mhstate = createProgressDialog('mh', 'Generating with MH...');
+		mhstate.dialog.dialog('open');
 		if (i === 1)
-			state.cancelled = false;
+			mhstate.cancelled = false;
 
-		if (state.cancelled) {
-			state.dialog.dialog('close');
+		if (mhstate.cancelled) {
+			mhstate.dialog.dialog('close');
 			return;
 		}
 
 		if (i === n) {
-			state.dialog.dialog('close');
+			mhstate.dialog.dialog('close');
 		} else {
 			var percentage = i/n * 100;
-			state.infotext.text('Iteration ' + i + '/' + n);
-			state.progressbar.progressbar('value', percentage);
+			mhstate.infotext.text('Iteration ' + i + '/' + n);
+			mhstate.progressbar.progressbar('value', percentage);
 		}
 
 		// Invoke continuation k once display has finished updating.
 		// This will break the trampoline loop, so we have to restart it.
 		if (i % period === 0) {
 			window.setTimeout(function() {
-				trampoline = k();
-				while(trampoline) trampoline = trampoline();
+				wrapWithRuntimeCheck(function() {
+					trampoline = k();
+					while(trampoline) trampoline = trampoline();
+				});
 			});
 		} else {
 			return k();
@@ -77,38 +139,73 @@ var Verbose = (function() {
 	// nFinished: number of particles finished
 	// nTotal: number of particles total.
 	// k: continuation (resumes SMC)
-	function verboseSMC(gen, nFinished, nTotal, k) {
-		if (state === null)
-			createDialog();
-		state.dialog.dialog('option', 'width', 500);
-		state.dialog.dialog('open');
+	var smcstate = null;
+	function smcProgress(gen, nFinished, nTotal, k) {
+		if (smcstate === null)
+			smcstate = createProgressDialog('smc', 'Generating with SMC...', 500);
+		smcstate.dialog.dialog('open');
 		if (gen === 1)
-			state.cancelled = false;
+			smcstate.cancelled = false;
 
-		if (state.cancelled) {
-			state.dialog.dialog('close');
+		if (smcstate.cancelled) {
+			smcstate.dialog.dialog('close');
 			return;
 		}
 
 		if (nFinished === nTotal) {
-			state.dialog.dialog('close');
+			smcstate.dialog.dialog('close');
 		} else {
 			var percentage = nFinished/nTotal * 100;
-			state.infotext.text('Generation ' + gen + ' (' + nFinished + '/' + nTotal + ' particles finished)');
-			state.progressbar.progressbar('value', percentage);
+			smcstate.infotext.text('Generation ' + gen + ' (' + nFinished + '/' + nTotal + ' particles finished)');
+			smcstate.progressbar.progressbar('value', percentage);
 		}
 
 		// Invoke k once display is finished updating
 		// (again, we need to restart the trampoline)
 		window.setTimeout(function() {
-			trampoline = k();
-			while(trampoline) trampoline = trampoline();
+			wrapWithRuntimeCheck(function() {
+				trampoline = k();
+				while(trampoline) trampoline = trampoline();
+			});
 		});
 	}
 
+	var compilestate = null;
+	function compileProgress(status) {
+		if (compilestate === null)
+			compilestate = createProgressDialog('compile', 'Compiling...', 300, false);
+		if (status === 'start') {
+			compilestate.dialog.dialog('open');
+			// compilestate.infotext.text('');
+			compilestate.progressbar.progressbar('value', false);
+		} else if (status === 'end') {
+			compilestate.dialog.dialog('close');
+		} else throw new Error('Unrecognized compile status ' + status);
+	}
+
+	var compileErrorState = null;
+	function compileError(errortext) {
+		if (compileErrorState === null)
+			compileErrorState = createErrorDialog('compileError', 'Compiler Error!', 500);
+		compileErrorState.infotext.text(errortext);
+		compileErrorState.dialog.dialog('open');
+	}
+
+	var runtimeErrorState = null;
+	function runtimeError(errortext) {
+		if (runtimeErrorState === null)
+			runtimeErrorState = createErrorDialog('runtimeError', 'Runtime Error!', 500);
+		runtimeErrorState.infotext.text(errortext);
+		runtimeErrorState.dialog.dialog('open');
+	}
+
 	return {
-		MH: verboseMH,
-		SMC: verboseSMC
+		MH: mhProgress,
+		SMC: smcProgress,
+		Compile: compileProgress,
+		CompilerError: compileError,
+		RuntimeError: runtimeError,
+		wrapWithRuntimeCheck: wrapWithRuntimeCheck
 	};
 
 })();

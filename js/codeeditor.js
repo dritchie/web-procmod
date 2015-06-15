@@ -56,17 +56,30 @@ var CodeEditor = (function() {
 			});	
 		}
 
-		// Returns the compiled program if the code has changed since last compile.
-		// Otherwise, returns false.
-		state.compile = function() {
+		// Takes callback with what to do when the compilation is done
+		// Arg to callback is either the newly-compiled function, if the code
+		//    has changed, or 'unchanged' if the code has not changed, or 'error'
+		//    if there was a compiler error.
+		state.compile = function(cb) {
 			var currCode = state.editor.getValue();
 			if (state.prevCode !== currCode) {
 				state.prevCode = currCode;
-				var compiledCode = webppl.compile("(function(){" + currCode + "})()", true, true);
-				// console.log(compiledCode);
-				compiledProgram = eval(compiledCode);
-				return compiledProgram;
-			} else return false;
+				Verbose.Compile('start');
+				window.setTimeout(function() {
+					try {
+						var compiledCode = webppl.compile("(function(){" + currCode + "})()", true, true);
+						compiledProgram = eval(compiledCode);
+						Verbose.Compile('end');
+						cb(compiledProgram);
+					} catch (e) {
+						Verbose.Compile('end');
+						Verbose.CompilerError(e.message);
+						window.setTimeout(function() {
+							cb('error');
+						});
+					}
+				});
+			} else cb('unchanged');
 		}
 
 
