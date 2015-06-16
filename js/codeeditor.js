@@ -90,7 +90,7 @@ var CodeEditor = (function() {
 							cb('error');
 						});
 					}
-				});
+				}, 10);
 			} else cb('unchanged');
 		}
 
