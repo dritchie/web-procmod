@@ -148,10 +148,14 @@
 						sampmodels = generations_models[generations_models.length-1];
 
 						// Update GUI with new generation control, if there's more than one generation
-						if (gui_generation !== null)
+						if (gui_generation !== null) {
 							gui.remove(gui_generation);
-						if (gui_showbestoverall !== null)
+							gui_generation = null;
+						}
+						if (gui_showbestoverall !== null) {
 							gui.remove(gui_showbestoverall)
+							gui_showbestoverall = null;
+						}
 						if (generations_samps.length > 1)
 						{
 							guistate.generationIndex = generations_samps.length-1;
