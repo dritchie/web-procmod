@@ -231,7 +231,7 @@ return ParticleFilter(generate, 300, {justSample: true, verbose: Verbose.SMC});
 
 // Comment out the above and uncomment the below to use Metropolis-Hastings instead
 //setFuturePolicy('deterministic');
-//return MH(generate, 1000, {justSample: true, verbose: Verbose.MH});
+//return MH(generate, 500, {justSample: true, verbose: Verbose.MH});
 
 // Source code for this demo can be found at:
 // https://github.com/dritchie/web-procmod
