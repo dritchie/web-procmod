@@ -4,7 +4,7 @@ var CodeEditor = (function() {
 		var outerdiv = $('<div></div>', {id: 'codeDialog'});
 		$('body').append(outerdiv);
 		var textarea = $('<textarea></textarea>', {id: 'codeTextArea'});
-		textarea.text('// This is a comment!');
+		textarea.text('// Loading source code...');
 		outerdiv.append(textarea);
 
 		var defaultWidth = 870;
