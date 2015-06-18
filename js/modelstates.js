@@ -108,6 +108,89 @@ var ModelStates = (function()
 
 	// ------------------------------------------------------------------------
 
+	// Simplified sequential state that doesn't do volume matching
+	ModelStates.Sequential.NonIntersecting = function()
+	{
+		this.geometry = null;
+		this.bbox = null;
+		this.next = null;
+		this.length = 0;
+		this.score = 0;
+	}
+
+	ModelStates.Sequential.NonIntersecting.create = function()
+	{
+		var ms = new ModelStates.Sequential.NonIntersecting();
+		ms.geometry = new Geo.Geometry();
+		ms.bbox = new THREE.Box3();
+		return ms;
+	}
+
+	ModelStates.Sequential.NonIntersecting.extend = function(geo, next, doupdate)
+	{
+		var ms = new ModelStates.Sequential.NonIntersecting();
+		ms.geometry = geo;
+		if (doupdate)
+			ms.bbox = geo.getbbox().clone().union(next.bbox);
+		ms.next = next;
+		ms.length = 1 + next.length;
+		return ms;
+	}
+
+	ModelStates.Sequential.NonIntersecting.prototype = 
+	{
+		constructor: ModelStates.Sequential.NonIntersecting,
+
+		addGeometry: function(geo)
+		{
+			var newstate;
+			// We don't even bother updating the state if the score is already -Infinity.
+			// (This is sort of like bailing out early: the program runs to completion, but
+			//   it doesn't do any of the really expensive stuff).
+			// If adding this new geometry results in a self-intersection, then
+			//    the score immediately drops to log(0).
+			if (this.score === -Infinity || this.intersects(geo))
+			{
+				newstate = ModelStates.Sequential.NonIntersecting.extend(geo, this, false);
+				newstate.score = -Infinity;
+			}
+			else
+			{
+				newstate = ModelStates.Sequential.NonIntersecting.extend(geo, this, true);
+				newstate.score = 0;
+			}
+			return newstate;
+		},
+
+		// The linear chain of states acts like a one-dimesional BVH.
+		intersects: function(geo)
+		{
+			var geobbox = geo.getbbox();
+			// Walk down the chain of states, looking for intersections.
+			for (var currstate = this; currstate !== null; currstate = currstate.next)
+			{
+				// If at any point the new geo's bbox no longer intersects the accumulated state
+				//    bbox, we can bail out with a false.
+				if (!geobbox.isIntersectionBox(currstate.bbox))
+					return false;
+				// If we find an intersection, bail out with a true.
+				if (geo.intersects(currstate.geometry))
+					return true;
+			}
+			return false;
+		},
+
+		getCompleteGeometry: function()
+		{
+			var accumgeo = new Geo.Geometry();
+			for (var currstate = this; currstate !== null; currstate = currstate.next)
+				accumgeo.merge(currstate.geometry);
+			return accumgeo;
+		}
+	}
+
+	// ------------------------------------------------------------------------
+
 	ModelStates.Compositional.Voxelizing = function(voxparams)
 	{
 		this.geometry = null;

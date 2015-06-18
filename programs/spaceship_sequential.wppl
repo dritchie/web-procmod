@@ -2,8 +2,12 @@
 // Create a new model state
 var newState = function()
 {
-	// Assume availability of global 'voxparams'
+	// State which tracks the voxelized model
+	// (Assumes availability of global 'voxparams')
 	return ModelStates.Sequential.Voxelizing.create(voxparams);
+
+	// Simpler state which just tracks self-intersections
+	// return ModelStates.Sequential.NonIntersecting.create();
 }
 
 // Add geometry to an existing model state
@@ -230,8 +234,10 @@ setFuturePolicy('stochastic');
 return ParticleFilter(generate, 300, {justSample: true, verbose: Verbose.SMC});
 
 // Comment out the above and uncomment the below to use Metropolis-Hastings instead
-//setFuturePolicy('deterministic');
-//return MH(generate, 500, {justSample: true, verbose: Verbose.MH});
+// setFuturePolicy('deterministic');
+// var N = 500;
+// // var N = 1;
+// return MH(generate, N, {justSample: true, verbose: Verbose.MH});
 
 // Source code for this demo can be found at:
 // https://github.com/dritchie/web-procmod
