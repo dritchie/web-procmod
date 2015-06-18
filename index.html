@@ -188,10 +188,10 @@
 					}
 
 					// Run inference (and time it).
-					Verbose.wrapWithRuntimeCheck(function() {
+					Verbose.wrapWithErrorCheck(function() {
 						t0 = performance.now();
 						compiledProgram({}, doneK, "");
-					});
+					}, Verbose.RuntimeError);
 				});
 			}
 

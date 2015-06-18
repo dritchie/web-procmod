@@ -85,14 +85,18 @@ var Verbose = (function() {
 		return state;
 	}
 
-	function wrapWithRuntimeCheck(thunk) {
+	// Returns true if executing thunk succeeded, false otherwise.
+	function wrapWithErrorCheck(thunk, errorFn) {
 		try {
 			thunk();
+			return true;
 		} catch (e) {
-			// Hide all other dialogs before showing the runtime error one.
+			// Hide all other dialogs before showing the requested one.
 			for (var i = 0; i < dialogstates.length; i++)
 				dialogstates[i].dialog.dialog('close');
-			runtimeError(e.message);
+			errorFn(e.message);
+			console.log(e.stack);
+			return false;
 		}
 	}
 
@@ -125,10 +129,10 @@ var Verbose = (function() {
 		// This will break the trampoline loop, so we have to restart it.
 		if (i % period === 0) {
 			window.setTimeout(function() {
-				wrapWithRuntimeCheck(function() {
+				wrapWithErrorCheck(function() {
 					trampoline = k();
 					while(trampoline) trampoline = trampoline();
-				});
+				}, runtimeError);
 			});
 		} else {
 			return k();
@@ -163,10 +167,10 @@ var Verbose = (function() {
 		// Invoke k once display is finished updating
 		// (again, we need to restart the trampoline)
 		window.setTimeout(function() {
-			wrapWithRuntimeCheck(function() {
+			wrapWithErrorCheck(function() {
 				trampoline = k();
 				while(trampoline) trampoline = trampoline();
-			});
+			}, runtimeError);
 		});
 	}
 
@@ -187,7 +191,7 @@ var Verbose = (function() {
 	function compileError(errortext) {
 		if (compileErrorState === null)
 			compileErrorState = createErrorDialog('compileError', 'Compiler Error!', 500);
-		compileErrorState.infotext.text(errortext);
+		compileErrorState.infotext.text(errortext + '(see Developer Console for stack trace)');
 		compileErrorState.dialog.dialog('open');
 	}
 
@@ -195,18 +199,19 @@ var Verbose = (function() {
 	function runtimeError(errortext) {
 		if (runtimeErrorState === null)
 			runtimeErrorState = createErrorDialog('runtimeError', 'Runtime Error!', 500);
-		runtimeErrorState.infotext.text(errortext);
+		runtimeErrorState.infotext.text(errortext + '(see Developer Console for stack trace)');
 		runtimeErrorState.dialog.dialog('open');
 	}
 
-	return {
-		MH: mhProgress,
-		SMC: smcProgress,
-		Compile: compileProgress,
-		CompilerError: compileError,
-		RuntimeError: runtimeError,
-		wrapWithRuntimeCheck: wrapWithRuntimeCheck
-	};
+	var exports = {};
+	exports.MH = mhProgress;
+	exports.SMC = smcProgress;
+	exports.Compile = compileProgress;
+	exports.CompilerError = compileError;
+	exports.RuntimeError = runtimeError;
+	exports.wrapWithErrorCheck = wrapWithErrorCheck;
+
+	return exports;
 
 })();
 

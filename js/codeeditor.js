@@ -78,18 +78,16 @@ var CodeEditor = (function() {
 				state.prevCode = currCode;
 				Verbose.Compile('start');
 				window.setTimeout(function() {
-					try {
+					var compiledProgram;
+					var succ = Verbose.wrapWithErrorCheck(function() {
 						var compiledCode = webppl.compile("(function(){" + currCode + "})()", true, true);
 						compiledProgram = eval(compiledCode);
 						Verbose.Compile('end');
+					}, Verbose.CompilerError);
+					if (succ)
 						cb(compiledProgram);
-					} catch (e) {
-						Verbose.Compile('end');
-						Verbose.CompilerError(e.message);
-						window.setTimeout(function() {
-							cb('error');
-						});
-					}
+					else
+						cb('error');
 				}, 10);
 			} else cb('unchanged');
 		}
