@@ -191,7 +191,7 @@ var Verbose = (function() {
 	function compileError(errortext) {
 		if (compileErrorState === null)
 			compileErrorState = createErrorDialog('compileError', 'Compiler Error!', 500);
-		compileErrorState.infotext.text(errortext + '(see Developer Console for stack trace)');
+		compileErrorState.infotext.text(errortext + ' (see Developer Console for stack trace)');
 		compileErrorState.dialog.dialog('open');
 	}
 
@@ -199,7 +199,7 @@ var Verbose = (function() {
 	function runtimeError(errortext) {
 		if (runtimeErrorState === null)
 			runtimeErrorState = createErrorDialog('runtimeError', 'Runtime Error!', 500);
-		runtimeErrorState.infotext.text(errortext + '(see Developer Console for stack trace)');
+		runtimeErrorState.infotext.text(errortext + ' (see Developer Console for stack trace)');
 		runtimeErrorState.dialog.dialog('open');
 	}
 
