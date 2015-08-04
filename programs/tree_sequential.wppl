@@ -36,22 +36,26 @@ var branch = function(origradius, frame, i, depth, prev) {
 		addGeometry(tree.treeSegment(prev, frame, splitframe, nextframe));
 
 		// Recursively branch
-		if (flip(tree.branchProb(depth, i))) {
-			// Theta mean/variance based on avg weighted by 'up-facing-ness'
-			var thetaMuSigma = tree.estimateThetaDistrib(splitframe, nextframe);
-			var theta = gaussian(thetaMuSigma[0], thetaMuSigma[1]);
-			var maxbranchradius = tmp.copy(nextframe.center).sub(splitframe.center)
-			                         .multiplyScalar(0.5).length();
-			var branchradius = Math.min(uniform(0.9, 1) * nextframe.radius, maxbranchradius);
-			var bframeAndPrev = tree.branchFrame(splitframe, nextframe, 0.5, theta, branchradius);
-			var bframe = bframeAndPrev.frame;
-			var bprev = bframeAndPrev.prev;
-			branch(origradius, bframe, 0, depth + 1, bprev);
-		}
+		future(function() {
+			if (flip(tree.branchProb(depth, i))) {
+				// Theta mean/variance based on avg weighted by 'up-facing-ness'
+				var thetaMuSigma = tree.estimateThetaDistrib(splitframe, nextframe);
+				var theta = gaussian(thetaMuSigma[0], thetaMuSigma[1]);
+				var maxbranchradius = tmp.copy(nextframe.center).sub(splitframe.center)
+				                         .multiplyScalar(0.5).length();
+				var branchradius = Math.min(uniform(0.9, 1) * nextframe.radius, maxbranchradius);
+				var bframeAndPrev = tree.branchFrame(splitframe, nextframe, 0.5, theta, branchradius);
+				var bframe = bframeAndPrev.frame;
+				var bprev = bframeAndPrev.prev;
+				branch(origradius, bframe, 0, depth + 1, bprev);
+			}
+		});
 
 		// Keep generating same branch?
-		if (flip(tree.continueProb(i)))
-			branch(origradius, nextframe, i + 1, depth, null);
+		future(function() {
+			if (flip(tree.continueProb(i)))
+				branch(origradius, nextframe, i + 1, depth, null);
+		});
 	}
 };
 
@@ -66,6 +70,7 @@ var generate = function() {
 		v: 0
 	};
 	branch(startframe.radius, startframe, 0, 0, null);
+	finishall();
 	return globalStore.modelState;
 };
 
@@ -73,8 +78,12 @@ var generate = function() {
 // ----------------------------------------------------------------------------
 
 
-var N = 1000;
-// var N = 1;
-return HashMH(generate, N, {justSample: true, verbose: true});
+// var N = 1000;
+// // var N = 1;
+// return HashMH(generate, N, {justSample: true, verbose: true});
+
+
+setFuturePolicy('stochastic');
+return ParticleFilter(generate, 300, {justSample: true, verbose: Verbose.SMC});
 
 
