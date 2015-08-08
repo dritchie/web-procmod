@@ -236,7 +236,6 @@ return ParticleFilter(generate, 300, {justSample: true, verbose: Verbose.SMC});
 // Comment out the above and uncomment the below to use Metropolis-Hastings instead
 // setFuturePolicy('deterministic');
 // var N = 500;
-// // var N = 1;
 // return MH(generate, N, {justSample: true, verbose: Verbose.MH});
 
 // Source code for this demo can be found at:
