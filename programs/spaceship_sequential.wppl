@@ -1,3 +1,4 @@
+globaStore.doFactors = true
 
 // Create a new model state
 var newState = function()
@@ -16,9 +17,11 @@ var addGeometry = function(geo)
 	var currstate = globalStore.modelState;
 	var newstate = currstate.addGeometry(geo);
 	globalStore.modelState = newstate;
-	// This extra bit of logic is to prevent NaNs (from -Infinity - -Infinity calculations)
-	var score = (currstate.score == -Infinity) ? -Infinity : (newstate.score - currstate.score);
-	factor(score);
+	if (globalStore.doFactors) {
+		// This extra bit of logic is to prevent NaNs (from -Infinity - -Infinity calculations)
+		var score = (currstate.score == -Infinity) ? -Infinity : (newstate.score - currstate.score);
+		factor(score);
+	}
 }
 
 
@@ -229,6 +232,7 @@ var generate = function()
 var generateByForwardSampling = function()
 {
 	setFuturePolicy('deterministic');
+	globalStore.doFactors = false;
 	return ParticleFilter(generate, 1, {justSample: true, verbose: Verbose.SMC});
 }
 
@@ -236,6 +240,7 @@ var generateByForwardSampling = function()
 var generateResultsBySOSMC = function()
 {
 	setFuturePolicy('stochastic');
+	globalStore.doFactors = true;
 	return ParticleFilter(generate, 300, {justSample: true, verbose: Verbose.SMC});
 }
 
@@ -243,15 +248,16 @@ var generateResultsBySOSMC = function()
 var generateResultsByMH = function()
 {
 	setFuturePolicy('deterministic');
+	globalStore.doFactors = true;
 	var N = 500;
 	return MH(generate, N, {justSample: true, verbose: Verbose.MH})
 }
 
 // ----------------------------------------------------------------------------
 
-// return generateByForwardSampling()
+//return generateByForwardSampling()
 return generateResultsBySOSMC()
-// return generateResultsByMH()
+//return generateResultsByMH()
 
 // Source code for this demo can be found at:
 // https://github.com/dritchie/web-procmod
