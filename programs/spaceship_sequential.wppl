@@ -225,18 +225,33 @@ var generate = function()
 	return globalStore.modelState;
 }
 
+// Generate results by forward sampling (don't enforce constraints)
+var generateByForwardSampling = function()
+{
+	setFuturePolicy('deterministic');
+	return ParticleFilter(generate, 1, {justSample: true, verbose: Verbose.SMC});
+}
+
+// Generate results by SOSMC
+var generateResultsBySOSMC = function()
+{
+	setFuturePolicy('stochastic');
+	return ParticleFilter(generate, 300, {justSample: true, verbose: Verbose.SMC});
+}
+
+// Generate results by MH
+var generateResultsByMH = function()
+{
+	setFuturePolicy('deterministic');
+	var N = 500;
+	return MH(generate, N, {justSample: true, verbose: Verbose.MH})
+}
 
 // ----------------------------------------------------------------------------
 
-// Generate results using SOSMC
-// (Switch the future policy to 'deterministic' to use depth-first SMC)
-setFuturePolicy('stochastic');
-return ParticleFilter(generate, 300, {justSample: true, verbose: Verbose.SMC});
-
-// Comment out the above and uncomment the below to use Metropolis-Hastings instead
-// setFuturePolicy('deterministic');
-// var N = 500;
-// return MH(generate, N, {justSample: true, verbose: Verbose.MH});
+// return generateByForwardSampling()
+return generateResultsBySOSMC()
+// return generateResultsByMH()
 
 // Source code for this demo can be found at:
 // https://github.com/dritchie/web-procmod
