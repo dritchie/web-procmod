@@ -1,4 +1,4 @@
-globaStore.doFactors = true
+globalStore.doFactors = true
 
 // Create a new model state
 var newState = function()
